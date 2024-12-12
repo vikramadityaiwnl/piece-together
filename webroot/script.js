@@ -1,52 +1,61 @@
 class App {
   constructor() {
-    const output = document.querySelector('#messageOutput');
-    const increaseButton = document.querySelector('#btn-increase');
-    const decreaseButton = document.querySelector('#btn-decrease');
-    const usernameLabel = document.querySelector('#username');
-    const counterLabel = document.querySelector('#counter');
-    var counter = 0;
+    // Screens & Utils
+    const mainMenuScreen = document.getElementById('main-menu-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const backgroundMusic = document.getElementById('background-music');
 
-    // When the Devvit app sends a message with `context.ui.webView.postMessage`, this will be triggered
+    // Main Menu Components
+    const soloButton = document.getElementById('solo-button');
+    const coopButton = document.getElementById('co-op-button');
+    const soundToggleButton = document.getElementById('sound-toggle-button');
+
     window.addEventListener('message', (ev) => {
-      const { type, data } = ev.data;
+      const { data, type } = ev.data;
 
-      // Reserved type for messages sent via `context.ui.webView.postMessage`
-      if (type === 'devvit-message') {
-        const { message } = data;
+      if (type !== 'devvit-message') return
 
-        // Always output full message
-        output.replaceChildren(JSON.stringify(message, undefined, 2));
+      const { message } = data;
 
-        // Load initial data
-        if (message.type === 'initialData') {
-          const { username, currentCounter } = message.data;
-          usernameLabel.innerText = username;
-          counterLabel.innerText = counter = currentCounter;
+      console.log('Received message:', message);
+
+      if (message?.data.type === 'initialData') {
+        const { assets } = message.data.data;
+
+        if (soloButton) soloButton.setAttribute('src', assets.solo);
+        if (coopButton) coopButton.setAttribute('src', assets.coop);
+        if (backgroundMusic) {
+          backgroundMusic.setAttribute('src', assets.backgroundMusic);
+          backgroundMusic.load(); // Ensure the audio is loaded
         }
+        if (mainMenuScreen) mainMenuScreen.style.backgroundImage = `url(${assets.mainMenuBackground})`;
+        this.setupSoundToggleButton(soundToggleButton, assets);
 
-        // Update counter
-        if (message.type === 'updateCounter') {
-          const { currentCounter } = message.data;
-          counterLabel.innerText = counter = currentCounter;
-        }
+        if (mainMenuScreen) {
+          mainMenuScreen.style.display = 'block';
+          gameScreen.style.display = 'none';
+        }  
       }
     });
+  }
 
-    increaseButton.addEventListener('click', () => {
-      // Sends a message to the Devvit app
-      window.parent?.postMessage(
-        { type: 'setCounter', data: { newCounter: Number(counter + 1) } },
-        '*'
-      );
-    });
+  setupSoundToggleButton(soundToggleButton, assets) {
+    soundToggleButton.setAttribute('src', assets.soundOn);
 
-    decreaseButton.addEventListener('click', () => {
-      // Sends a message to the Devvit app
-      window.parent?.postMessage(
-        { type: 'setCounter', data: { newCounter: Number(counter - 1) } },
-        '*'
-      );
+    soundToggleButton.addEventListener('click', () => {
+      const backgroundMusic = document.getElementById('background-music');
+
+      if (backgroundMusic.src) { // Check if the source is set
+        if (backgroundMusic.paused) {
+          backgroundMusic.play().catch(error => console.error('Error playing audio:', error));
+          soundToggleButton.setAttribute('src', assets.soundOn);
+        } else {
+          backgroundMusic.pause();
+          soundToggleButton.setAttribute('src', assets.soundOff);
+        }
+      } else {
+        console.error('Background music source is not set.');
+      }
     });
   }
 }

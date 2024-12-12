@@ -1,82 +1,77 @@
 import './createPost.js';
 
-import { Devvit, useState } from '@devvit/public-api';
+import { Devvit, useState, useAsync } from '@devvit/public-api';
 
-// Defines the messages that are exchanged between Devvit and Web View
-type WebViewMessage =
-  | {
-      type: 'initialData';
-      data: { username: string; currentCounter: number };
-    }
-  | {
-      type: 'setCounter';
-      data: { newCounter: number };
-    }
-  | {
-      type: 'updateCounter';
-      data: { currentCounter: number };
-    };
+type InitialData = {
+  type: 'initialData';
+  data: {
+    username: string,
+    avatar: string,
+    assets: Assets,
+  };
+}
+
+type WebViewMessage = InitialData;
 
 Devvit.configure({
   redditAPI: true,
   redis: true,
 });
 
-// Add a custom post type to Devvit
+type Assets = {
+  solo: string;
+  coop: string;
+  soundOn: string;
+  soundOff: string;
+  mainMenuBackground: string;
+  backgroundMusic: string;
+}
+const getAssets = (context: Devvit.Context): Assets => {
+  return {
+    solo: context.assets.getURL('game/solo_button.png'),
+    coop: context.assets.getURL('game/co_op_button.png'),
+    soundOn: context.assets.getURL('game/sound_on.png'),
+    soundOff: context.assets.getURL('game/sound_off.png'),
+    mainMenuBackground: context.assets.getURL('game/main_menu_background.png'),
+    backgroundMusic: context.assets.getURL('game/background_music.mp3'),
+  }
+}
+
 Devvit.addCustomPostType({
   name: 'Webview Example',
   height: 'tall',
   render: (context) => {
-    // Load username with `useAsync` hook
-    const [username] = useState(async () => {
-      const currUser = await context.reddit.getCurrentUser();
-      return currUser?.username ?? 'anon';
-    });
-
-    // Load latest counter from redis with `useAsync` hook
-    const [counter, setCounter] = useState(async () => {
-      const redisCount = await context.redis.get(`counter_${context.postId}`);
-      return Number(redisCount ?? 0);
-    });
-
-    // Create a reactive state for web view visibility
     const [webviewVisible, setWebviewVisible] = useState(false);
 
-    // When the web view invokes `window.parent.postMessage` this function is called
+    const initialData = useAsync<InitialData>(async () => {
+      const currUser = await context.reddit.getCurrentUser();
+
+      return {
+        type: 'initialData',
+        data: {
+          username: currUser?.username || 'Unknown',
+          avatar: await currUser?.getSnoovatarUrl() || '',
+          assets: getAssets(context),
+        },
+      }
+    });
+
     const onMessage = async (msg: WebViewMessage) => {
       switch (msg.type) {
-        case 'setCounter':
-          await context.redis.set(`counter_${context.postId}`, msg.data.newCounter.toString());
-          context.ui.webView.postMessage('myWebView', {
-            type: 'updateCounter',
-            data: {
-              currentCounter: msg.data.newCounter,
-            },
-          });
-          setCounter(msg.data.newCounter);
-          break;
-        case 'initialData':
-        case 'updateCounter':
-          break;
-
         default:
-          throw new Error(`Unknown message type: ${msg satisfies never}`);
+          throw new Error(`Unknown message type: ${msg}`);
       }
     };
 
-    // When the button is clicked, send initial data to web view and show it
-    const onShowWebviewClick = () => {
-      setWebviewVisible(true);
-      context.ui.webView.postMessage('myWebView', {
-        type: 'initialData',
-        data: {
-          username: username,
-          currentCounter: counter,
-        },
-      });
+    const showWebView = () => {
+      if (initialData.error === null) {
+        context.ui.webView.postMessage('myWebView', initialData);
+        setWebviewVisible(true);
+      } else {
+        console.error('Initial data not ready:', initialData);
+      }
     };
 
-    // Render the custom post type
     return (
       <vstack grow padding="small">
         <vstack
@@ -84,28 +79,15 @@ Devvit.addCustomPostType({
           height={webviewVisible ? '0%' : '100%'}
           alignment="middle center"
         >
-          <text size="xlarge" weight="bold">
-            Example App
-          </text>
-          <spacer />
-          <vstack alignment="start middle">
-            <hstack>
-              <text size="medium">Username:</text>
-              <text size="medium" weight="bold">
-                {' '}
-                {username ?? ''}
-              </text>
-            </hstack>
-            <hstack>
-              <text size="medium">Current counter:</text>
-              <text size="medium" weight="bold">
-                {' '}
-                {counter ?? ''}
-              </text>
-            </hstack>
-          </vstack>
-          <spacer />
-          <button onPress={onShowWebviewClick}>Launch App</button>
+          <image
+            url='game/main_screen_background.gif'
+            description='Main screen background'
+            height='100%'
+            width='100%'
+            imageHeight={100}
+            imageWidth={100}
+            onPress={showWebView}
+          />
         </vstack>
         <vstack grow={webviewVisible} height={webviewVisible ? '100%' : '0%'}>
           <vstack border="thick" borderColor="black" height={webviewVisible ? '100%' : '0%'}>
