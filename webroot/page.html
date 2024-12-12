@@ -23,9 +23,104 @@
       </div>
     </div>
 
-    <div id="game-screen"></div>
+    <div id="game-screen">
+      <div class="reaction-panel">
+        <div class="reaction-button" data-emoji="👏">
+          <span>👏</span>
+        </div>
+        <div class="reaction-button" data-emoji="⭐">
+          <span>⭐</span>
+        </div>
+        <div class="reaction-button" data-emoji="😤">
+          <span>😤</span>
+        </div>
+        <div class="reaction-button" data-emoji="💀">
+          <span>💀</span>
+        </div>
+      </div>
 
-    <!-- Include the script at the end of the body -->
+      <button id="hintButton" class="hint-button">
+        <span class="hint-text">💡 Hint</span>
+      </button>
+
+      <div class="main-content">
+        <div id="puzzle-title"></div>
+        <div id="puzzleBoard" class="puzzle-container"></div>
+      </div>
+
+      <div class="side-panel" id="sidePanel">
+        <div id="pieces-panel" class="panel-content">
+          <div id="piecesTray" class="pieces-tray"></div>
+        </div>
+        <div class="panel-content" id="leaderboard-panel">
+          <div class="leaderboard-tabs">
+            <button class="tab active" data-tab="rankings">Rankings</button>
+            <button class="tab" data-tab="mvp">MVPs</button>
+          </div>
+          
+          <div class="tab-content active" id="rankings-content">
+            <div class="rankings-list">
+              <div class="placeholder-content">
+                <div class="placeholder-icon">🏆</div>
+                <div class="placeholder-title">No Rankings Yet</div>
+                <div class="placeholder-subtitle">
+                  Make moves to earn points!<br>
+                  Correct moves: +5 points<br>
+                  Incorrect moves: -2 points
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-content" id="mvp-content">
+            <div class="mvp-categories">
+              <div class="mvp-card" id="most-moves">
+                <div class="placeholder-content">
+                  <div class="placeholder-icon">🔄</div>
+                  <div class="placeholder-title">Most Active Player</div>
+                  <div class="placeholder-subtitle">No moves made yet</div>
+                </div>
+              </div>
+              
+              <div class="mvp-card" id="most-correct">
+                <div class="placeholder-content">
+                  <div class="placeholder-icon">✅</div>
+                  <div class="placeholder-title">Most Accurate Player</div>
+                  <div class="placeholder-subtitle">No correct moves yet</div>
+                </div>
+              </div>
+              
+              <div class="mvp-card" id="most-incorrect">
+                <div class="placeholder-content">
+                  <div class="placeholder-icon">❌</div>
+                  <div class="placeholder-title">Most Adventurous Player</div>
+                  <div class="placeholder-subtitle">No incorrect moves yet</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-content" id="audit-panel">
+          <!-- Move audit-log before placeholder -->
+          <div class="audit-log"></div>
+          <div class="placeholder-content" id="auditPlaceholder">
+            <div class="placeholder-icon">📝</div>
+            <div class="placeholder-title">No Activity Yet</div>
+            <div class="placeholder-subtitle">
+              Be the first to make a move!<br>
+              Moves will be recorded here as players solve the puzzle.
+            </div>
+          </div>
+        </div>
+      </div> 
+
+      <div class="floating-buttons">
+        <button class="panel-toggle" data-panel="pieces" title="Puzzle Pieces">🧩</button>
+        <button class="panel-toggle" data-panel="leaderboard" title="Leaderboard">🏆</button>
+        <button class="panel-toggle" data-panel="audit" title="Audit Log">📋</button>
+      </div>
+    </div>
+
     <script src="./script.js"></script>
   </body>
 </html>
