@@ -1,6 +1,13 @@
 import { sendMessage } from "./utils.js";
 
 class PuzzleBoard {
+  /**
+   * Initialize the puzzle board.
+   * @param {Object[]} pieces - The puzzle pieces.
+   * @param {'solo' | 'coop'} mode - The game mode.
+   * @param {string} sessionId - The session ID.
+   * @param {Object} gameState - The game state.
+   */
   constructor(pieces, mode, sessionId, gameState = null) {
     this.pieces = pieces;
     this.mode = mode;

@@ -8,7 +8,10 @@ type InitialData = {
     username: string;
     avatar: string;
     assets: Assets;
-    image: PuzzlePieceImage;
+    image: {
+      solo: PuzzlePieceImage;
+      coop: PuzzlePieceImage;
+    };
   };
 };
 
@@ -60,13 +63,30 @@ const getAssets = (context: Devvit.Context): Assets => ({
   backgroundMusic: context.assets.getURL('game/background_music.mp3'),
 });
 
-const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage> => {
-  const cachedImage = await context.redis.get(`puzzle:${context.postId}:image`)
-  if (cachedImage) {
-    return JSON.parse(cachedImage) as PuzzlePieceImage;
+const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<PuzzlePieceImage> => {
+  if (mode === 'coop') {
+    const cacheKey = `puzzle:${context.postId}:image:coop`;
+    const cachedImage = await context.redis.get(cacheKey)
+    if (cachedImage) {
+      return JSON.parse(cachedImage) as PuzzlePieceImage;
+    }
   }
 
-  const randomIndex = Math.floor(Math.random() * images.length);
+  // For solo mode or new co-op game, get a random image
+  let randomIndex = Math.floor(Math.random() * images.length);
+  
+  // For solo mode, make sure it's different from co-op image
+  if (mode === 'solo') {
+    const coopImageData = await context.redis.get(`puzzle:${context.postId}:image:coop`);
+    if (coopImageData) {
+      const coopImage = JSON.parse(coopImageData);
+      // Keep generating new random index until we get a different image
+      while (images[randomIndex].folder === coopImage.folder) {
+        randomIndex = Math.floor(Math.random() * images.length);
+      }
+    }
+  }
+
   const image = images[randomIndex];
   const piecesUrl = image.pieces.map((piece) => (
     context.assets.getURL(piece.filepath)
@@ -83,9 +103,12 @@ const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage
     })),
   }
 
-  context.redis.set(`puzzle:${context.postId}:image`, JSON.stringify(puzzleImage));
+  // Only cache co-op images
+  if (mode === 'coop') {
+    context.redis.set(`puzzle:${context.postId}:image:coop`, JSON.stringify(puzzleImage));
+  }
 
-  return puzzleImage
+  return puzzleImage;
 }
 
 Devvit.configure({
@@ -101,9 +124,14 @@ Devvit.addCustomPostType({
 
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
-      const image = await getPuzzleImage(context);
       const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
-      const cooldownTimer = await context.redis.get(`puzzle:${context.postId}:${currUser?.username}:cooldown`);
+      const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
+      
+      // Get both images upfront
+      const [coopImage, soloImage] = await Promise.all([
+        getPuzzleImage(context, 'coop'),
+        getPuzzleImage(context, 'solo')
+      ]);
 
       return {
         type: 'initialData',
@@ -111,8 +139,11 @@ Devvit.addCustomPostType({
           username: currUser?.username || 'Unknown',
           avatar: await currUser?.getSnoovatarUrl() || '',
           assets: getAssets(context),
-          image,
-          gameState: gameState ? JSON.parse(gameState) : { board: [], tray: [] },
+          image: {
+            coop: coopImage,
+            solo: soloImage
+          },
+          gameState: parsedState,
         },
       };
     });

@@ -19,7 +19,7 @@ class App {
     this.gameScreen = document.getElementById('game-screen');
     this.backgroundMusic = document.getElementById('background-music');
     this.soloButton = document.getElementById('solo-button');
-    this.coopButton = document.getElementById('co-op-button');
+    this.coopButton = document.getElementById('coop-button');
     this.soundToggleButton = document.getElementById('sound-toggle-button');
     this.hintButton = document.getElementById('hintButton');
     this.sidePanel = document.getElementById('sidePanel');
@@ -35,7 +35,7 @@ class App {
     window.addEventListener('message', (ev) => this.handleMessage(ev));
 
     this.soloButton.addEventListener('click', () => this.startGame('solo'));
-    this.coopButton.addEventListener('click', () => this.startGame('co-op'));
+    this.coopButton.addEventListener('click', () => this.startGame('coop'));
 
     this.panelToggles.forEach(button => {
       button.addEventListener('click', () => this.togglePanel(button.dataset.panel));
@@ -60,17 +60,27 @@ class App {
 
   /**
    * Start the game with the given mode.
-   * @param {'solo' | 'co-op'} mode - The game mode.
+   * @param {'solo' | 'coop'} mode - The game mode.
    * 
    */
   startGame(mode) {
     this.mainMenuScreen.style.display = 'none';
     this.gameScreen.style.display = 'block';
-    this.puzzleTitle.textContent = `r/${this.initialData.image.subreddit}`
+    
+    // Convert 'co-op' to 'coop' for consistency
+    const normalizedMode = mode === 'co-op' ? 'coop' : mode;
+    const image = this.initialData.image[normalizedMode];
+    
+    if (!image) {
+      console.error(`No image found for mode: ${normalizedMode}`);
+      return;
+    }
+    
+    this.puzzleTitle.textContent = `r/${image.subreddit}`
     
     this.gameManager = new GameManager(mode, this.sessionId);
-    const gameState = mode === 'co-op' ? this.initialData.gameState : null;
-    this.initializePuzzleBoard(mode, gameState);
+    const gameState = mode === 'coop' ? this.initialData.gameState : null;
+    this.initializePuzzleBoard(mode, gameState, image);
   }
 
   /**
@@ -138,8 +148,7 @@ class App {
   /**
    * Initialize the puzzle board with the puzzle pieces.
    */
-  initializePuzzleBoard(mode, gameState = null) {
-    const { image } = this.initialData;
+  initializePuzzleBoard(mode, gameState = null, image) {
     this.puzzleBoard = new PuzzleBoard(image.pieces, mode, this.sessionId, gameState);
   }
 
