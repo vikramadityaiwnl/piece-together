@@ -17,7 +17,13 @@ type AddCooldown = {
   username: string;
 }
 
-type WebViewMessage = AddCooldown;
+type UpdateGameState = {
+  type: 'update-game-state';
+  gameState: GameState;
+  sessionId: string;
+}
+
+type WebViewMessage = AddCooldown | UpdateGameState;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -124,6 +130,11 @@ Devvit.addCustomPostType({
         //     nx: true,
         //   });
         //   break;
+
+        case 'update-game-state':
+          await context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState));
+          // add realtime aswell
+          break;
 
         default:
           throw new Error(`Unknown message type: ${msg}`);

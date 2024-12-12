@@ -7,6 +7,8 @@ class App {
     this.toastManager = new ToastManager();
     this.initializeElements();
     this.setupEventListeners();
+    
+    this.sessionId = this.generateSessionId();
   }
 
   /**
@@ -66,8 +68,9 @@ class App {
     this.gameScreen.style.display = 'block';
     this.puzzleTitle.textContent = `r/${this.initialData.image.subreddit}`
     
-    this.gameManager = new GameManager(mode);
-    this.initializePuzzleBoard(mode);
+    this.gameManager = new GameManager(mode, this.sessionId);
+    const gameState = mode === 'co-op' ? this.initialData.gameState : null;
+    this.initializePuzzleBoard(mode, gameState);
   }
 
   /**
@@ -135,9 +138,16 @@ class App {
   /**
    * Initialize the puzzle board with the puzzle pieces.
    */
-  initializePuzzleBoard(mode) {
+  initializePuzzleBoard(mode, gameState = null) {
     const { image } = this.initialData;
-    this.puzzleBoard = new PuzzleBoard(image.pieces, mode);
+    this.puzzleBoard = new PuzzleBoard(image.pieces, mode, this.sessionId, gameState);
+  }
+
+  /**
+   * Generate session id
+   */
+  generateSessionId() { 
+    return Math.random().toString(36).substring(2, 9);
   }
 }
 

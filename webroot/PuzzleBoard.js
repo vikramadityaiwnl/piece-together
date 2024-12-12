@@ -1,7 +1,10 @@
+import { sendMessage } from "./utils.js";
+
 class PuzzleBoard {
-  constructor(pieces, mode) {
+  constructor(pieces, mode, sessionId, gameState = null) {
     this.pieces = pieces;
     this.mode = mode;
+    this.sessionId = sessionId;
     this.timerStarted = false;
     this.timerElement = document.getElementById('timer');
     this.startTime = 0;
@@ -14,12 +17,13 @@ class PuzzleBoard {
     this.boardElement = document.getElementById('puzzleBoard');
     this.trayElement = document.getElementById('piecesTray');
     this.selectedPiece = null;
-    this.initBoard();
-    this.initTray();
+    const isNewGame = !gameState || (gameState.board.length === 0 && gameState.tray.length === 0);
+    this.initBoard(isNewGame ? null : gameState.board);
+    this.initTray(isNewGame ? null : gameState.tray);
     this.setupEventListeners();
   }
 
-  initBoard() {
+  initBoard(boardState = null) {
     this.boardElement.innerHTML = '';
     this.boardElement.style.display = 'grid';
     this.boardElement.style.width = '400px';
@@ -39,6 +43,7 @@ class PuzzleBoard {
       emptyCell.style.cursor = 'pointer';
       emptyCell.style.width = '100%';
       emptyCell.style.height = '100%';
+      emptyCell.dataset.from = `position-${i + 1}`;
 
       if (i % 4 < 3) {
         emptyCell.style.borderRight = '1px solid #e2e8f0';
@@ -51,10 +56,21 @@ class PuzzleBoard {
       this.boardElement.appendChild(emptyCell);
     }
 
+    const cells = Array.from(this.boardElement.children);
+    if (boardState) {
+      boardState.forEach((state, index) => {
+        const cell = cells[index];
+        cell.style.backgroundImage = state.backgroundImage;
+        if (state.backgroundImage) {
+          cell.style.cursor = 'pointer';
+        }
+      });
+    }
+
     this.boardElement.style.border = '1px solid #e2e8f0';
   }
 
-  initTray() {
+  initTray(trayState = null) {
     this.trayElement.innerHTML = '';
     this.trayElement.style.display = 'grid';
     this.trayElement.style.gridTemplateColumns = 'repeat(2, 85px)';
@@ -71,20 +87,42 @@ class PuzzleBoard {
       slot.style.height = '90px';
       slot.style.width = '90px';
       slot.style.aspectRatio = '1';
+      slot.dataset.from = 'tray';
       this.trayElement.appendChild(slot);
     }
 
-    this.pieces.forEach((piece, index) => {
-      const slot = this.trayElement.children[index];
-      slot.style.border = '1px solid #ccc';
-      slot.style.backgroundSize = 'cover';
-      slot.style.backgroundPosition = 'center';
-      slot.style.cursor = 'pointer';
-      slot.style.backgroundImage = `url(${piece.filepath})`;
-      slot.dataset.correctPosition = piece.correct_position;
-      slot.dataset.id = piece.id;
-      slot.dataset.from = 'tray';
-    });
+    const slots = Array.from(this.trayElement.children);
+    if (trayState && trayState.length > 0) {
+      trayState.forEach((state, index) => {
+        const slot = slots[index];
+        slot.style.backgroundImage = state.backgroundImage;
+        slot.dataset.id = state.id;
+        
+        if (state.backgroundImage) {
+          slot.style.border = '1px solid #ccc';
+          slot.style.backgroundSize = 'cover';
+          slot.style.backgroundPosition = 'center';
+          slot.style.cursor = 'pointer';
+        } else {
+          slot.style.border = '1px dashed #cbd5e1';
+          slot.style.cursor = 'default';
+        }
+      });
+    } else {
+      // Shuffle pieces
+      const shuffledPieces = this.pieces.sort(() => Math.random() - 0.5);
+
+      shuffledPieces.forEach((piece, index) => {
+        const slot = slots[index];
+        slot.style.border = '1px solid #ccc';
+        slot.style.backgroundSize = 'cover';
+        slot.style.backgroundPosition = 'center';
+        slot.style.cursor = 'pointer';
+        slot.style.backgroundImage = `url(${piece.filepath})`;
+        slot.dataset.id = piece.id;
+        slot.dataset.from = 'tray';
+      });
+    }
   }
 
   /**
@@ -180,6 +218,7 @@ class PuzzleBoard {
     }
 
     this.deselectPiece();
+    this.saveGameState();
   }
 
   startTimer() {
@@ -201,6 +240,26 @@ class PuzzleBoard {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
+  }
+
+  /**
+   * Save the current game state.
+   * @returns {Object} The current state of the board and tray.
+   */
+  saveGameState() {
+    const boardState = Array.from(this.boardElement.children).map(cell => ({
+      backgroundImage: cell.style.backgroundImage,
+    }));
+
+    const trayState = Array.from(this.trayElement.children).map(slot => ({
+      backgroundImage: slot.style.backgroundImage,
+      id: slot.dataset.id || null,
+    }));
+
+    sendMessage('update-game-state', {
+      gameState: { board: boardState, tray: trayState },
+      sessionId: this.sessionId
+    });
   }
 }
 
