@@ -175,7 +175,10 @@ class PuzzleBoard {
         this.deselectPiece();
         return;
       }
-      this.placePieceOnBoard(cell);
+      // Proceed with placement only if we have a valid piece selected
+      if (this.selectedPiece.style.backgroundImage) {
+        this.placePieceOnBoard(cell);
+      }
     } else if (cell.style.backgroundImage) {
       this.selectPiece(cell);
     }
@@ -188,6 +191,9 @@ class PuzzleBoard {
   handlePieceClick(e) {
     const piece = e.target;
     
+    // Don't allow selecting empty tray slots
+    if (!piece.style.backgroundImage) return;
+    
     if (this.selectedPiece === piece) {
       this.deselectPiece();
     } else {
@@ -196,19 +202,32 @@ class PuzzleBoard {
   }
 
   /**
+   * Highlight or unhighlight a piece
+   * @param {HTMLElement} piece - The piece to highlight
+   * @param {boolean} [highlight=true] - Whether to highlight or unhighlight
+   */
+  highlightPiece(piece, highlight = true) {
+    if (!piece) return;
+    
+    const isFromTray = piece.classList.contains('tray-piece');
+    const borderStyle = highlight ? 
+      '2px solid #3b82f6' : 
+      (isFromTray ? '1px solid #ccc' : '1px solid #e2e8f0');
+    piece.style.border = borderStyle;
+  }
+
+  /**
    * Select a piece for placement.
    * @param {HTMLElement} piece - The piece element to select.
    */
   async selectPiece(piece) {
     if (this.selectedPiece) {
-      const isFromTray = this.selectedPiece.classList.contains('tray-piece');
-      const borderStyle = isFromTray ? '1px solid #ccc' : '1px solid #e2e8f0';
-      this.selectedPiece.style.border = borderStyle;
+      this.highlightPiece(this.selectedPiece, false);
     }
     
     // Highlight the piece first
     this.selectedPiece = piece;
-    piece.style.border = '2px solid #3b82f6';
+    this.highlightPiece(piece);
 
     // Then check cooldown and revert if needed
     if (!(await this.checkCooldown())) {
@@ -224,11 +243,17 @@ class PuzzleBoard {
    */
   deselectPiece() {
     if (this.selectedPiece) {
-      const isFromTray = this.selectedPiece.classList.contains('tray-piece');
-      const borderStyle = isFromTray ? '1px solid #ccc' : '1px solid #e2e8f0';
-      this.selectedPiece.style.border = borderStyle;
+      this.highlightPiece(this.selectedPiece, false);
       this.selectedPiece = null;
     }
+  }
+
+  /**
+   * Find first empty slot in the tray
+   * @returns {HTMLElement|null} Empty tray slot or null if none found
+   */
+  findEmptyTraySlot() {
+    return Array.from(this.trayElement.children).find(slot => !slot.style.backgroundImage);
   }
 
   /**
@@ -240,7 +265,26 @@ class PuzzleBoard {
 
     const isFromTray = this.selectedPiece.classList.contains('tray-piece');
     const selectedImage = this.selectedPiece.style.backgroundImage;
+    const targetImage = cell.style.backgroundImage;
 
+    // If target cell has a piece and we're coming from tray, 
+    // find empty tray slot for the displaced piece
+    if (targetImage && isFromTray) {
+      const emptySlot = this.findEmptyTraySlot();
+      if (!emptySlot) {
+        // No empty slot found, can't make the move
+        this.deselectPiece();
+        return;
+      }
+      // Move displaced piece to tray
+      emptySlot.style.backgroundImage = targetImage;
+      emptySlot.style.border = '1px solid #ccc';
+      emptySlot.style.backgroundSize = 'cover';
+      emptySlot.style.backgroundPosition = 'center';
+      emptySlot.style.cursor = 'pointer';
+    }
+
+    // Place selected piece in target cell
     cell.style.backgroundImage = selectedImage;
     
     if (isFromTray) {
@@ -248,7 +292,12 @@ class PuzzleBoard {
       this.selectedPiece.style.border = '1px dashed #cbd5e1';
       this.selectedPiece.style.cursor = 'default';
     } else {
-      this.selectedPiece.style.backgroundImage = '';
+      // Handle board-to-board movement
+      if (targetImage) {
+        this.selectedPiece.style.backgroundImage = targetImage;
+      } else {
+        this.selectedPiece.style.backgroundImage = '';
+      }
     }
 
     this.lastMoveTime = Date.now();
