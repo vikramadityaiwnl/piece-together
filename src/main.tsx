@@ -21,6 +21,11 @@ type PuzzlePieceImage = {
   pieces: { filepath: string; correct_position: number; id: string }[];
 }
 
+type GameState = {
+  board: any[];
+  tray: any[];
+}
+
 type Assets = {
   solo: string;
   coop: string;
@@ -51,7 +56,25 @@ const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage
   }
 
   const randomIndex = Math.floor(Math.random() * images.length);
-  return images[randomIndex];
+  const image = images[randomIndex];
+  const piecesUrl = image.pieces.map((piece) => (
+    context.assets.getURL(piece.filepath)
+  ));
+
+  const puzzleImage = {
+    folder: image.folder,
+    subreddit: image.subreddit,
+    hint: image.hint,
+    pieces: image.pieces.map((piece, index) => ({
+      filepath: piecesUrl[index],
+      correct_position: piece.correct_position,
+      id: piece.id,
+    })),
+  }
+
+  context.redis.set(`puzzle:${context.postId}:image`, JSON.stringify(puzzleImage));
+
+  return puzzleImage
 }
 
 Devvit.configure({
@@ -68,6 +91,7 @@ Devvit.addCustomPostType({
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
       const image = await getPuzzleImage(context);
+      const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
 
       return {
         type: 'initialData',
@@ -76,6 +100,7 @@ Devvit.addCustomPostType({
           avatar: await currUser?.getSnoovatarUrl() || '',
           assets: getAssets(context),
           image,
+          gameState: gameState ? JSON.parse(gameState) : { board: [], tray: [] },
         },
       };
     });

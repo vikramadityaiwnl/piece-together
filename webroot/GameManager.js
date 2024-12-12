@@ -7,3 +7,5 @@ class GameManager {
     this.mode = mode;
   }
 }
+
+export default GameManager;

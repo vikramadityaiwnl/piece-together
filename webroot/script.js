@@ -1,3 +1,6 @@
+import GameManager from './GameManager.js';
+import PuzzleBoard from './PuzzleBoard.js';
+
 class App {
   constructor() {
     this.initializeElements();
@@ -18,6 +21,7 @@ class App {
     this.sidePanel = document.getElementById('sidePanel');
     this.panelToggles = document.querySelectorAll('.panel-toggle');
     this.panelContents = document.querySelectorAll('.panel-content');
+    this.puzzleTitle = document.getElementById('puzzle-title');
   }
 
   /**
@@ -58,7 +62,9 @@ class App {
   startGame(mode) {
     this.mainMenuScreen.style.display = 'none';
     this.gameScreen.style.display = 'block';
+    this.puzzleTitle.textContent = `r/${this.initialData.image.subreddit}`
     this.gameManager = new GameManager(mode);
+    this.initializePuzzleBoard();
   }
 
   /**
@@ -80,6 +86,7 @@ class App {
       this.mainMenuScreen.style.display = 'block';
       this.gameScreen.style.display = 'none';
     }
+    this.initialData = data;
     this.setupSoundToggleButton(assets);
   }
 
@@ -118,6 +125,14 @@ class App {
       }
     });
     this.sidePanel.classList.toggle('active');
+  }
+
+  /**
+   * Initialize the puzzle board with the puzzle pieces.
+   */
+  initializePuzzleBoard() {
+    const { image } = this.initialData;
+    this.puzzleBoard = new PuzzleBoard(image.pieces);
   }
 }
 
