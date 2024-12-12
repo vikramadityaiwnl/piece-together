@@ -60,7 +60,7 @@ class ToastManager {
   }
 
   showWelcomeToast(username) {
-    this.show(`Welcome, ${username}!`, 'success', 5000);
+    this.show(`Welcome, ${username}!`, 'success', 3000);
   }
 }
 

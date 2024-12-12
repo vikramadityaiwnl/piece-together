@@ -12,12 +12,19 @@ type InitialData = {
       solo: PuzzlePieceImage;
       coop: PuzzlePieceImage;
     };
+    cooldown?: number;
   };
 };
 
 type AddCooldown = {
   type: 'add-cooldown';
   username: string;
+  sessionId: string;
+}
+
+type ShowCooldown = {
+  type: 'show-cooldown';
+  cooldown: number;
 }
 
 type UpdateGameState = {
@@ -26,7 +33,12 @@ type UpdateGameState = {
   sessionId: string;
 }
 
-type WebViewMessage = AddCooldown | UpdateGameState;
+type ShowToast = {
+  type: 'show-toast';
+  message: string;
+}
+
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -127,6 +139,10 @@ Devvit.addCustomPostType({
       const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
       const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
       
+      // Get cooldown if it exists
+      const cooldownKey = `puzzle:${context.postId}:${currUser?.username}:cooldown`;
+      const cooldown = await context.redis.get(cooldownKey);
+
       // Get both images upfront
       const [coopImage, soloImage] = await Promise.all([
         getPuzzleImage(context, 'coop'),
@@ -144,6 +160,7 @@ Devvit.addCustomPostType({
             solo: soloImage
           },
           gameState: parsedState,
+          cooldown: cooldown ? parseInt(cooldown) : undefined
         },
       };
     });
@@ -154,17 +171,22 @@ Devvit.addCustomPostType({
      */
     const onMessage = async (msg: WebViewMessage) => {
       switch (msg.type) {
-        // case 'add-cooldown':
-        //   const cooldown = new Date(Date.now() + 60 * 1000)
-        //   await context.redis.set(`puzzle:${context.postId}:${msg.username}:cooldown`, cooldown, {
-        //     expiration: cooldown,
-        //     nx: true,
-        //   });
-        //   break;
+        case 'add-cooldown':
+          const cooldown = new Date(Date.now() + 60 * 1000);
+          const key = `puzzle:${context.postId}:${msg.username}:cooldown`;
+          await context.redis.set(key, cooldown.getTime().toString(), {
+            expiration: cooldown,
+            nx: true,
+          });
+          break;
 
         case 'update-game-state':
           await context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState));
           // add realtime aswell
+          break;
+
+        case 'show-toast':
+          context.ui.webView.postMessage('myWebView', { data: msg });
           break;
 
         default:

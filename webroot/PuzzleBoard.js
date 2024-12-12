@@ -1,4 +1,4 @@
-import { sendMessage } from "./utils.js";
+import { sendMessage, getCooldownMessage, formatRemainingTime } from "./utils.js";
 
 class PuzzleBoard {
   /**
@@ -7,16 +7,34 @@ class PuzzleBoard {
    * @param {'solo' | 'coop'} mode - The game mode.
    * @param {string} sessionId - The session ID.
    * @param {Object} gameState - The game state.
+   * @param {string} username - The username.
+   * @param {number} [cooldown] - Initial cooldown timestamp.
    */
-  constructor(pieces, mode, sessionId, gameState = null) {
+  constructor(pieces, mode, sessionId, gameState = null, username, cooldown) {
     this.pieces = pieces;
     this.mode = mode;
     this.sessionId = sessionId;
+    this.username = username;
+    this.cooldownDuration = 60000; // Move this before lastMoveTime initialization
+    
+    // Calculate lastMoveTime based on cooldown from Redis
+    if (cooldown) {
+      // If we have a Redis cooldown timestamp, calculate when the last move was made
+      const now = Date.now();
+      if (cooldown > now) {
+        this.lastMoveTime = now - (this.cooldownDuration - (cooldown - now));
+      } else {
+        this.lastMoveTime = 0;
+      }
+    } else {
+      this.lastMoveTime = 0;
+    }
+
     this.timerStarted = false;
     this.timerElement = document.getElementById('timer');
     this.startTime = 0;
     this.timerInterval = null;
-    
+
     if (mode === 'solo') {
       this.timerElement.classList.add('active');
     }
@@ -181,14 +199,23 @@ class PuzzleBoard {
    * Select a piece for placement.
    * @param {HTMLElement} piece - The piece element to select.
    */
-  selectPiece(piece) {
+  async selectPiece(piece) {
     if (this.selectedPiece) {
       const isFromTray = this.selectedPiece.classList.contains('tray-piece');
       const borderStyle = isFromTray ? '1px solid #ccc' : '1px solid #e2e8f0';
       this.selectedPiece.style.border = borderStyle;
     }
+    
+    // Highlight the piece first
     this.selectedPiece = piece;
     piece.style.border = '2px solid #3b82f6';
+
+    // Then check cooldown and revert if needed
+    if (!(await this.checkCooldown())) {
+      this.deselectPiece();
+      return;
+    }
+
     this.startTimer();
   }
 
@@ -224,8 +251,34 @@ class PuzzleBoard {
       this.selectedPiece.style.backgroundImage = '';
     }
 
+    this.lastMoveTime = Date.now();
+    if (this.mode === 'coop') {
+      sendMessage('add-cooldown', {
+        username: this.username
+      });
+    }
+
     this.deselectPiece();
-    this.saveGameState();
+    if (this.mode === 'coop') {
+      this.saveGameState();
+    }
+  }
+
+  async checkCooldown() {
+    if (this.mode !== 'coop') return true;
+    
+    const now = Date.now();
+    const timeSinceLastMove = now - this.lastMoveTime;
+    
+    if (timeSinceLastMove < this.cooldownDuration) {
+      const remainingTime = this.cooldownDuration - timeSinceLastMove;
+      const remainingSeconds = formatRemainingTime(remainingTime);
+      const message = getCooldownMessage(remainingSeconds);
+      sendMessage('show-toast', { message });
+      return false;
+    }
+    
+    return true;
   }
 
   startTimer() {
@@ -251,9 +304,11 @@ class PuzzleBoard {
 
   /**
    * Save the current game state.
-   * @returns {Object} The current state of the board and tray.
+   * Only used in co-op mode.
    */
   saveGameState() {
+    if (this.mode !== 'coop') return;
+
     const boardState = Array.from(this.boardElement.children).map(cell => ({
       backgroundImage: cell.style.backgroundImage,
     }));

@@ -52,9 +52,14 @@ class App {
 
     const { message } = data;
     console.log('Received message:', message);
+    if (!message) return
 
-    if (message?.data.type === 'initialData') {
+    if (message.data.type === 'initialData') {
       this.handleInitialData(message.data.data);
+    }
+
+    if (message.data.type === 'show-toast') {
+      this.toastManager.show(message.data.message, 'warning');
     }
   }
 
@@ -79,6 +84,7 @@ class App {
     this.puzzleTitle.textContent = `r/${image.subreddit}`
     
     this.gameManager = new GameManager(mode, this.sessionId);
+    // Only pass gameState for coop mode, null for solo
     const gameState = mode === 'coop' ? this.initialData.gameState : null;
     this.initializePuzzleBoard(mode, gameState, image);
   }
@@ -149,7 +155,14 @@ class App {
    * Initialize the puzzle board with the puzzle pieces.
    */
   initializePuzzleBoard(mode, gameState = null, image) {
-    this.puzzleBoard = new PuzzleBoard(image.pieces, mode, this.sessionId, gameState);
+    this.puzzleBoard = new PuzzleBoard(
+      image.pieces, 
+      mode, 
+      this.sessionId, 
+      gameState,
+      this.initialData.username,
+      this.initialData.cooldown
+    );
   }
 
   /**
