@@ -287,3 +287,36 @@ body {
 .panel-content.active {
   display: block;
 }
+
+.timer {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.timer.active {
+  display: flex;
+}
+
+.timer-icon {
+  display: inline-block;
+  animation: rotate 2s infinite linear;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.timer-text {
+  font-weight: 600;
+}

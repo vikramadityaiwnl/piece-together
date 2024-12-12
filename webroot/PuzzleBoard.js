@@ -1,6 +1,16 @@
 class PuzzleBoard {
-  constructor(pieces) {
+  constructor(pieces, mode) {
     this.pieces = pieces;
+    this.mode = mode;
+    this.timerStarted = false;
+    this.timerElement = document.getElementById('timer');
+    this.startTime = 0;
+    this.timerInterval = null;
+    
+    if (mode === 'solo') {
+      this.timerElement.classList.add('active');
+    }
+
     this.boardElement = document.getElementById('puzzleBoard');
     this.trayElement = document.getElementById('piecesTray');
     this.selectedPiece = null;
@@ -134,6 +144,7 @@ class PuzzleBoard {
     }
     this.selectedPiece = piece;
     piece.style.border = '2px solid #3b82f6';
+    this.startTimer();
   }
 
   /**
@@ -169,6 +180,27 @@ class PuzzleBoard {
     }
 
     this.deselectPiece();
+  }
+
+  startTimer() {
+    if (this.mode !== 'solo' || this.timerStarted) return;
+    
+    this.timerStarted = true;
+    this.startTime = Date.now();
+    this.timerInterval = setInterval(() => {
+      const elapsed = Date.now() - this.startTime;
+      const minutes = Math.floor(elapsed / 60000);
+      const seconds = Math.floor((elapsed % 60000) / 1000);
+      this.timerElement.querySelector('.timer-text').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  stopTimer() {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
   }
 }
 

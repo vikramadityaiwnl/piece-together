@@ -63,8 +63,9 @@ class App {
     this.mainMenuScreen.style.display = 'none';
     this.gameScreen.style.display = 'block';
     this.puzzleTitle.textContent = `r/${this.initialData.image.subreddit}`
+    
     this.gameManager = new GameManager(mode);
-    this.initializePuzzleBoard();
+    this.initializePuzzleBoard(mode);
   }
 
   /**
@@ -130,9 +131,9 @@ class App {
   /**
    * Initialize the puzzle board with the puzzle pieces.
    */
-  initializePuzzleBoard() {
+  initializePuzzleBoard(mode) {
     const { image } = this.initialData;
-    this.puzzleBoard = new PuzzleBoard(image.pieces);
+    this.puzzleBoard = new PuzzleBoard(image.pieces, mode);
   }
 }
 
