@@ -12,7 +12,12 @@ type InitialData = {
   };
 };
 
-type WebViewMessage = InitialData;
+type AddCooldown = {
+  type: 'add-cooldown';
+  username: string;
+}
+
+type WebViewMessage = AddCooldown;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -92,6 +97,7 @@ Devvit.addCustomPostType({
       const currUser = await context.reddit.getCurrentUser();
       const image = await getPuzzleImage(context);
       const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
+      const cooldownTimer = await context.redis.get(`puzzle:${context.postId}:${currUser?.username}:cooldown`);
 
       return {
         type: 'initialData',
@@ -111,6 +117,14 @@ Devvit.addCustomPostType({
      */
     const onMessage = async (msg: WebViewMessage) => {
       switch (msg.type) {
+        // case 'add-cooldown':
+        //   const cooldown = new Date(Date.now() + 60 * 1000)
+        //   await context.redis.set(`puzzle:${context.postId}:${msg.username}:cooldown`, cooldown, {
+        //     expiration: cooldown,
+        //     nx: true,
+        //   });
+        //   break;
+
         default:
           throw new Error(`Unknown message type: ${msg}`);
       }

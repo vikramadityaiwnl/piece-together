@@ -1,8 +1,10 @@
 import GameManager from './GameManager.js';
 import PuzzleBoard from './PuzzleBoard.js';
+import ToastManager from './ToastManager.js';
 
 class App {
   constructor() {
+    this.toastManager = new ToastManager();
     this.initializeElements();
     this.setupEventListeners();
   }
@@ -74,7 +76,7 @@ class App {
    * @param {Object} data.assets - The assets data.
    */
   handleInitialData(data) {
-    const { assets } = data;
+    const { assets, username } = data;
 
     if (this.soloButton) this.soloButton.setAttribute('src', assets.solo);
     if (this.coopButton) this.coopButton.setAttribute('src', assets.coop);
@@ -89,6 +91,8 @@ class App {
     }
     this.initialData = data;
     this.setupSoundToggleButton(assets);
+
+    this.toastManager.showWelcomeToast(username);
   }
 
   /**
