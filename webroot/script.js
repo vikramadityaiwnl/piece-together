@@ -23,9 +23,18 @@ class App {
     this.soundToggleButton = document.getElementById('sound-toggle-button');
     this.hintButton = document.getElementById('hintButton');
     this.sidePanel = document.getElementById('sidePanel');
-    this.panelToggles = document.querySelectorAll('.panel-toggle');
+    this.panelToggles = document.querySelectorAll('.tab');  // Changed from .panel-toggle
     this.panelContents = document.querySelectorAll('.panel-content');
     this.puzzleTitle = document.getElementById('puzzle-title');
+    this.backButton = document.getElementById('back-button');
+
+    // Add back button handler
+    if (this.backButton) {
+      this.backButton.addEventListener('click', () => {
+        this.gameScreen.style.display = 'none';
+        this.mainMenuScreen.style.display = 'block';
+      });
+    }
   }
 
   /**
@@ -105,6 +114,7 @@ class App {
     }
     if (this.mainMenuScreen) {
       this.mainMenuScreen.style.backgroundImage = `url(${assets.mainMenuBackground})`;
+      // Show main menu screen after assets are loaded
       this.mainMenuScreen.style.display = 'block';
       this.gameScreen.style.display = 'none';
     }

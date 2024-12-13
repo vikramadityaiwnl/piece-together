@@ -133,6 +133,7 @@ Devvit.addCustomPostType({
   height: 'tall',
   render: (context) => {
     const [webviewVisible, setWebviewVisible] = useState(false);
+    const [hasClicked, setHasClicked] = useState(false);
 
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
@@ -198,11 +199,15 @@ Devvit.addCustomPostType({
      * Show the webview when the main screen is pressed.
      */
     const showWebView = () => {
+      if (hasClicked) return;
+      setHasClicked(true);
+
       if (initialData.error === null) {
         context.ui.webView.postMessage('myWebView', initialData);
         setWebviewVisible(true);
       } else {
         console.error('Initial data not ready:', initialData);
+        setHasClicked(false)
       }
     };
 
