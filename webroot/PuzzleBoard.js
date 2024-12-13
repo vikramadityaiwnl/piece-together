@@ -50,34 +50,11 @@ class PuzzleBoard {
 
   initBoard(boardState = null) {
     this.boardElement.innerHTML = '';
-    this.boardElement.style.display = 'grid';
-    this.boardElement.style.width = '400px';
-    this.boardElement.style.height = '400px';
-    this.boardElement.style.backgroundColor = '#f8fafc';
-    this.boardElement.style.padding = '0.5rem';
-    this.boardElement.style.borderRadius = '8px';
-    this.boardElement.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-    this.boardElement.style.gridTemplateColumns = `repeat(4, 95px)`;
-    this.boardElement.style.gridTemplateRows = `repeat(4, 95px)`;
 
     for (let i = 0; i < 16; i++) {
       const emptyCell = document.createElement('div');
       emptyCell.classList.add('puzzle-piece');
-      emptyCell.style.backgroundSize = 'cover';
-      emptyCell.style.backgroundPosition = 'center';
-      emptyCell.style.cursor = 'pointer';
-      emptyCell.style.width = '100%';
-      emptyCell.style.height = '100%';
       emptyCell.dataset.from = `position-${i + 1}`;
-
-      if (i % 4 < 3) {
-        emptyCell.style.borderRight = '1px solid #e2e8f0';
-      }
-      
-      if (Math.floor(i / 4) < 3) {
-        emptyCell.style.borderBottom = '1px solid #e2e8f0';
-      }
-
       this.boardElement.appendChild(emptyCell);
     }
 
@@ -86,32 +63,16 @@ class PuzzleBoard {
       boardState.forEach((state, index) => {
         const cell = cells[index];
         cell.style.backgroundImage = state.backgroundImage;
-        if (state.backgroundImage) {
-          cell.style.cursor = 'pointer';
-        }
       });
     }
-
-    this.boardElement.style.border = '1px solid #e2e8f0';
   }
 
   initTray(trayState = null) {
     this.trayElement.innerHTML = '';
-    this.trayElement.style.display = 'grid';
-    this.trayElement.style.gridTemplateColumns = 'repeat(2, 85px)';
-    this.trayElement.style.gap = '0.5rem';
-    this.trayElement.style.padding = '0.5rem';
-    this.trayElement.style.justifyContent = 'space-evenly';
-    this.trayElement.style.alignItems = 'center';
     
     for (let i = 0; i < 16; i++) {
       const slot = document.createElement('div');
       slot.classList.add('tray-piece');
-      slot.style.border = '1px dashed #cbd5e1';
-      slot.style.borderRadius = '4px';
-      slot.style.height = '90px';
-      slot.style.width = '90px';
-      slot.style.aspectRatio = '1';
       slot.dataset.from = 'tray';
       this.trayElement.appendChild(slot);
     }
@@ -122,30 +83,13 @@ class PuzzleBoard {
         const slot = slots[index];
         slot.style.backgroundImage = state.backgroundImage;
         slot.dataset.id = state.id;
-        
-        if (state.backgroundImage) {
-          slot.style.border = '1px solid #ccc';
-          slot.style.backgroundSize = 'cover';
-          slot.style.backgroundPosition = 'center';
-          slot.style.cursor = 'pointer';
-        } else {
-          slot.style.border = '1px dashed #cbd5e1';
-          slot.style.cursor = 'default';
-        }
       });
     } else {
-      // Shuffle pieces
       const shuffledPieces = this.pieces.sort(() => Math.random() - 0.5);
-
       shuffledPieces.forEach((piece, index) => {
         const slot = slots[index];
-        slot.style.border = '1px solid #ccc';
-        slot.style.backgroundSize = 'cover';
-        slot.style.backgroundPosition = 'center';
-        slot.style.cursor = 'pointer';
         slot.style.backgroundImage = `url(${piece.filepath})`;
         slot.dataset.id = piece.id;
-        slot.dataset.from = 'tray';
       });
     }
   }

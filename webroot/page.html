@@ -1,67 +1,58 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <meta charset="UTF-8" />
-    <title>Jigsaw Puzzle</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <audio id="background-music" loop></audio>
 
-    <div id="main-menu-screen">
-      <div id="actions">
-        <img id="coop-button" alt="coop button">
-        <img id="solo-button" alt="solo button">
-      </div>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8" />
+  <title>Jigsaw Puzzle</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-      <div id="sound-toggle-container">
-        <img id="sound-toggle-button" alt="sound toggle">
+<body>
+  <audio id="background-music" loop></audio>
+
+  <div id="main-menu-screen">
+    <div id="actions">
+      <img id="coop-button" alt="Play Co-op Mode" class="menu-button">
+      <img id="solo-button" alt="Play Solo Mode" class="menu-button">
+    </div>
+
+    <div id="sound-toggle-container">
+      <img id="sound-toggle-button" alt="Toggle Sound" class="sound-toggle">
+    </div>
+  </div>
+
+  <div id="game-screen">
+    <div class="top-bar">
+      <button class="back-button" id="back-button">Back to Menu</button>
+
+      <h1 id="puzzle-title"></h1>
+
+      <div id="timer" class="timer">
+        <span class="timer-icon">⌛</span>
+        <span class="timer-text">00:00</span>
       </div>
     </div>
 
-    <div id="game-screen">
-      <div class="reaction-panel">
-        <div class="reaction-button" data-emoji="👏">
-          <span>👏</span>
-        </div>
-        <div class="reaction-button" data-emoji="⭐">
-          <span>⭐</span>
-        </div>
-        <div class="reaction-button" data-emoji="😤">
-          <span>😤</span>
-        </div>
-        <div class="reaction-button" data-emoji="💀">
-          <span>💀</span>
-        </div>
-      </div>
-
-      <button id="hintButton" class="hint-button">
-        <span class="hint-text">💡 Hint</span>
-      </button>
-
-      <div class="main-content">
-        <div id="puzzle-title"></div>
-        <div id="timer" class="timer">
-          <span class="timer-icon">⌛</span>
-          <span class="timer-text">00:00</span>
-        </div>
-        <div id="puzzleBoard" class="puzzle-container"></div>
-      </div>
-
+    <div class="main-content">
+      <div id="puzzleBoard" class="puzzle-container"></div>
+      
       <div class="side-panel" id="sidePanel">
-        <div id="pieces-panel" class="panel-content">
+        <div class="panel-tabs">
+          <button class="tab active" data-tab="pieces">🧩</button>
+          <button class="tab" data-tab="leaderboard">🏆</button>
+          <button class="tab" data-tab="audit">📝</button>
+        </div>
+
+        <div id="pieces-panel" class="panel-content active">
           <div id="piecesTray" class="pieces-tray"></div>
         </div>
+
         <div class="panel-content" id="leaderboard-panel">
           <div class="leaderboard-tabs">
             <button class="tab active" data-tab="rankings">Rankings</button>
             <button class="tab" data-tab="mvp">MVPs</button>
           </div>
-          
           <div class="tab-content active" id="rankings-content">
             <div class="rankings-list">
               <div class="placeholder-content">
@@ -75,7 +66,7 @@
               </div>
             </div>
           </div>
-          
+  
           <div class="tab-content" id="mvp-content">
             <div class="mvp-categories">
               <div class="mvp-card" id="most-moves">
@@ -85,28 +76,26 @@
                   <div class="placeholder-subtitle">No moves made yet</div>
                 </div>
               </div>
-              
-              <div class="mvp-card" id="most-correct">
-                <div class="placeholder-content">
-                  <div class="placeholder-icon">✅</div>
-                  <div class="placeholder-title">Most Accurate Player</div>
-                  <div class="placeholder-subtitle">No correct moves yet</div>
-                </div>
+  
+              <div class="mvp-card" id="most-correct"></div>
+              <div class="placeholder-content">
+                <div class="placeholder-icon">✅</div>
+                <div class="placeholder-title">Most Accurate Player</div>
+                <div class="placeholder-subtitle">No correct moves yet</div>
               </div>
-              
-              <div class="mvp-card" id="most-incorrect">
-                <div class="placeholder-content">
-                  <div class="placeholder-icon">❌</div>
-                  <div class="placeholder-title">Most Adventurous Player</div>
-                  <div class="placeholder-subtitle">No incorrect moves yet</div>
-                </div>
+            </div>
+  
+            <div class="mvp-card" id="most-incorrect">
+              <div class="placeholder-content">
+                <div class="placeholder-icon">❌</div>
+                <div class="placeholder-title">Most Adventurous Player</div>
+                <div class="placeholder-subtitle">No incorrect moves yet</div>
               </div>
             </div>
           </div>
         </div>
+
         <div class="panel-content" id="audit-panel">
-          <!-- Move audit-log before placeholder -->
-          <div class="audit-log"></div>
           <div class="placeholder-content" id="auditPlaceholder">
             <div class="placeholder-icon">📝</div>
             <div class="placeholder-title">No Activity Yet</div>
@@ -116,15 +105,34 @@
             </div>
           </div>
         </div>
-      </div> 
-
-      <div class="floating-buttons">
-        <button class="panel-toggle" data-panel="pieces" title="Puzzle Pieces">🧩</button>
-        <button class="panel-toggle" data-panel="leaderboard" title="Leaderboard">🏆</button>
-        <button class="panel-toggle" data-panel="audit" title="Audit Log">📋</button>
       </div>
     </div>
+  </div>
 
-    <script type="module" src="./script.js"></script>
-  </body>
+  <div class="bottom-bar">
+    <div class="reaction-panel">
+      <button class="reaction-button" data-emoji="👏">
+        <span>👏</span>
+      </button>
+      <button class="reaction-button" data-emoji="⭐">
+        <span>⭐</span>
+      </button>
+      <button class="reaction-button" data-emoji="😤">
+        <span>😤</span>
+      </button>
+      <button class="reaction-button" data-emoji="💀">
+        <span>💀</span>
+      </button>
+    </div>
+
+    <button id="hintButton" class="hint-button">
+      <span class="hint-icon">💡</span>
+      <span class="hint-text">Get Hint</span>
+    </button>
+  </div>
+  </div>
+
+  <script type="module" src="./script.js"></script>
+</body>
+
 </html>
