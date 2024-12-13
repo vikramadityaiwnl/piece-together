@@ -9,13 +9,15 @@ class PuzzleBoard {
    * @param {Object} gameState - The game state.
    * @param {string} username - The username.
    * @param {number} [cooldown] - Initial cooldown timestamp.
+   * @param {number} [startTime] - Initial start time for countdown timer.
    */
-  constructor(pieces, mode, sessionId, gameState = null, username, cooldown) {
+  constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null) {
     this.pieces = pieces;
     this.mode = mode;
     this.sessionId = sessionId;
     this.username = username;
     this.cooldownDuration = 60000; // Move this before lastMoveTime initialization
+    this.initialTime = startTime ? parseInt(startTime) : null;
     
     // Calculate lastMoveTime based on cooldown from Redis
     if (cooldown) {
@@ -42,6 +44,11 @@ class PuzzleBoard {
     // Show/hide mode-specific elements
     this.initializeModeElements(mode);
     
+    // Start timer automatically for co-op mode
+    if (mode === 'coop' && this.initialTime) {
+      this.startTimer();
+    }
+    
     this.boardElement = document.getElementById('puzzleBoard');
     this.trayElement = document.getElementById('piecesTray');
     this.selectedPiece = null;
@@ -56,12 +63,8 @@ class PuzzleBoard {
    * @param {'solo' | 'coop'} mode - The game mode
    */
   initializeModeElements(mode) {
-    // Handle timer visibility
-    if (mode === 'solo') {
-      this.timerElement.classList.add('active');
-    } else {
-      this.timerElement.classList.remove('active');
-    }
+    // Show timer for both modes
+    this.timerElement.classList.add('active');
 
     // Handle reactions and audit elements
     document.querySelectorAll('[data-mode="coop"]').forEach(element => {
@@ -335,17 +338,39 @@ class PuzzleBoard {
   }
 
   startTimer() {
-    if (this.mode !== 'solo' || this.timerStarted) return;
+    if (this.timerStarted) return;
     
     this.timerStarted = true;
     this.startTime = Date.now();
-    this.timerInterval = setInterval(() => {
-      const elapsed = Date.now() - this.startTime;
-      const minutes = Math.floor(elapsed / 60000);
-      const seconds = Math.floor((elapsed % 60000) / 1000);
-      this.timerElement.querySelector('.timer-text').textContent = 
-        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }, 1000);
+
+    // Start the timer immediately with first update
+    const updateTimer = () => {
+      const now = Date.now();
+      let displayTime;
+
+      if (this.mode === 'coop' && this.initialTime) {
+        const timeLeft = Math.max(0, this.initialTime + (60 * 60 * 1000) - now);
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        displayTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft === 0) {
+          this.stopTimer();
+          // TODO: Handle game end
+        }
+      } else {
+        const elapsed = now - this.startTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        displayTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+
+      this.timerElement.querySelector('.timer-text').textContent = displayTime;
+    };
+
+    // Update immediately and then start interval
+    updateTimer();
+    this.timerInterval = setInterval(updateTimer, 1000);
   }
 
   stopTimer() {

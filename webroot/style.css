@@ -545,20 +545,7 @@ body {
 }
 
 #timer {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-#timer.active {
+  display: flex;
   opacity: 1;
   pointer-events: auto;
-}
-
-#timer {
-  display: none;
-}
-
-#timer.active {
-  display: flex;
 }

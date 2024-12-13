@@ -212,7 +212,8 @@ class App {
       this.sessionId, 
       gameState,
       this.initialData.username,
-      this.initialData.cooldown
+      this.initialData.cooldown,
+      mode === 'coop' ? image.startedAt : null  // Use startedAt instead of separate time
     );
   }
 

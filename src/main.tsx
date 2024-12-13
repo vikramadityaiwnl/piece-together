@@ -13,6 +13,7 @@ type InitialData = {
       coop: PuzzlePieceImage;
     };
     cooldown?: number;
+    time?: string;  // Add time to InitialData type
   };
 };
 
@@ -45,6 +46,7 @@ type PuzzlePieceImage = {
   subreddit: string;
   hint: string;
   pieces: { filepath: string; correct_position: number; id: string }[];
+  startedAt?: number;
 }
 
 type GameState = {
@@ -78,16 +80,27 @@ const getAssets = (context: Devvit.Context): Assets => ({
 const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<PuzzlePieceImage> => {
   if (mode === 'coop') {
     const cacheKey = `puzzle:${context.postId}:image:coop`;
-    const cachedImage = await context.redis.get(cacheKey)
-    if (cachedImage) {
-      return JSON.parse(cachedImage) as PuzzlePieceImage;
+    const timeKey = `puzzle:${context.postId}:time`;
+    
+    // Check for existing image and time
+    const [cachedImage, cachedTime] = await Promise.all([
+      context.redis.get(cacheKey),
+      context.redis.get(timeKey)
+    ]);
+
+    // If we have both image and time, return the cached image
+    if (cachedImage && cachedTime) {
+      const parsedImage = JSON.parse(cachedImage) as PuzzlePieceImage;
+      parsedImage.startedAt = parseInt(cachedTime);
+      return parsedImage;
     }
   }
 
-  // For solo mode or new co-op game, get a random image
+  // Create new puzzle image
+  const now = Date.now();
   let randomIndex = Math.floor(Math.random() * images.length);
   
-  // For solo mode, make sure it's different from co-op image
+  // For solo mode or new co-op game, get a random image
   if (mode === 'solo') {
     const coopImageData = await context.redis.get(`puzzle:${context.postId}:image:coop`);
     if (coopImageData) {
@@ -113,11 +126,22 @@ const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<Pu
       correct_position: piece.correct_position,
       id: piece.id,
     })),
+    startedAt: mode === 'coop' ? now : undefined
   }
 
-  // Only cache co-op images
+  // Cache co-op image and time
   if (mode === 'coop') {
-    context.redis.set(`puzzle:${context.postId}:image:coop`, JSON.stringify(puzzleImage));
+    const expiration = new Date(now + 60 * 60 * 1000);
+    await Promise.all([
+      context.redis.set(`puzzle:${context.postId}:image:coop`, 
+        JSON.stringify(puzzleImage), 
+        { expiration }
+      ),
+      context.redis.set(`puzzle:${context.postId}:time`,
+        now.toString(),
+        { expiration }
+      )
+    ]);
   }
 
   return puzzleImage;
@@ -138,6 +162,7 @@ Devvit.addCustomPostType({
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
       const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
+      const time = await context.redis.get(`puzzle:${context.postId}:time`);
       const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
       
       // Get cooldown if it exists
@@ -160,6 +185,7 @@ Devvit.addCustomPostType({
             coop: coopImage,
             solo: soloImage
           },
+          time,
           gameState: parsedState,
           cooldown: cooldown ? parseInt(cooldown) : undefined
         },
