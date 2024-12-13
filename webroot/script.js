@@ -27,6 +27,10 @@ class App {
     this.panelContents = document.querySelectorAll('.panel-content');
     this.puzzleTitle = document.getElementById('puzzle-title');
     this.backButton = document.getElementById('back-button');
+    this.puzzleBoard = document.getElementById('puzzleBoard');
+    this.piecesTray = document.getElementById('piecesTray');
+    this.timer = document.getElementById('timer');
+    this.auditPanel = document.getElementById('audit-panel-content'); // Ensure this line is present
 
     // Add back button handler
     if (this.backButton) {
@@ -104,10 +108,14 @@ class App {
 
     const { message } = data;
     console.log('Received message:', message);
-    if (!message) return
+    if (!message) return;
 
     if (message.data.type === 'initialData') {
       this.handleInitialData(message.data.data);
+      // Initialize audit panel with initial data
+      if (message.data.data.auditLog) {
+        this.updateAuditPanel(message.data.data.auditLog);
+      }
     }
 
     if (message.data.type === 'show-toast') {
@@ -127,6 +135,41 @@ class App {
         this.puzzleBoard.updateCooldown(message.data.cooldown);
       }
     }
+
+    if (message.data.type === 'audit-update') {
+      this.updateAuditPanel(message.data.auditLog);
+    }
+  }
+
+  /**
+   * Update the audit panel with new entries
+   * @param {Array} auditLog - Array of audit entries
+   */
+  updateAuditPanel(auditLog) {
+    const auditHtml = auditLog.map(entry => {
+      const time = new Date(entry.action.timestamp).toLocaleTimeString();
+      const from = entry.action.from
+      const to = entry.action.to
+      const pieceId = entry.action.pieceId;
+      
+      return `
+        <div class="audit-entry">
+          <div class="audit-header">
+            <span class="audit-time">${time}</span>
+            <span class="audit-user">${entry.username}</span>
+          </div>
+          <div class="audit-move">
+            moved <span class="audit-piece-id">${pieceId}</span> 
+            from <span class="audit-position">${from}</span>
+            to
+            <span class="audit-position">${to}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  
+    this.auditPanel.innerHTML = auditHtml;
+    this.auditPanel.scrollTop = this.auditPanel.scrollHeight;
   }
 
   /**

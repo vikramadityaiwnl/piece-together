@@ -326,6 +326,24 @@ class PuzzleBoard {
       }
     }
 
+    // Create audit log entry
+    if (this.mode === 'coop') {
+      const fromPosition = this.selectedPiece.dataset.from;
+      const toPosition = cell.dataset.from;
+      const pieceId = this.selectedPiece.dataset.id;
+      
+      sendMessage('add-audit', {
+        username: this.username,
+        sessionId: this.sessionId,
+        action: {
+          from: fromPosition,
+          to: toPosition,
+          pieceId,
+          timestamp: Date.now()
+        }
+      });
+    }
+
     // Update cooldown state
     this.lastMoveTime = Date.now();
     if (this.mode === 'coop') {

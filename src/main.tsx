@@ -15,6 +15,7 @@ type InitialData = {
     cooldown?: number;
     time?: string;  // Add time to InitialData type
     sessionId: string;  // Add this line
+    auditLog: any[]; // Add this line
   };
 };
 
@@ -56,8 +57,22 @@ type GetCooldown = {
   type: 'get-cooldown';
 }
 
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | StartSolo | GetGameState | GetCooldown;
-type RealtimeMessage = UpdateGameState;
+// Add new type for audit log messages
+type AddAudit = {
+  type: 'add-audit';
+  username: string;
+  sessionId: string;
+  action: {
+    from: string;
+    to: string;
+    pieceId: string;
+    timestamp: number;
+  };
+}
+
+// Update WebViewMessage type
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | StartSolo | GetGameState | GetCooldown | AddAudit;
+type RealtimeMessage = UpdateGameState | { type: 'audit-update'; auditLog: any[]; sessionId: string; };
 
 type PuzzlePieceImage = {
   folder: string;
@@ -179,9 +194,11 @@ Devvit.addCustomPostType({
     const [hasClicked, setHasClicked] = useState(false);
     const [sessionId, setSessionId] = useState(Math.random().toString(36).substring(2, 9));
 
+    // Update initialData to include audit log
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
       const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
+      const auditLog = await context.redis.get(`puzzle:${context.postId}:audit`);
       const time = await context.redis.get(`puzzle:${context.postId}:time`);
       const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
 
@@ -208,24 +225,21 @@ Devvit.addCustomPostType({
           time,
           gameState: parsedState,
           cooldown: cooldown ? parseInt(cooldown) : undefined,
-          sessionId
+          sessionId,
+          auditLog: auditLog ? JSON.parse(auditLog) : [],
         },
       };
     });
 
+    // Update channel handler
     const channel = useChannel({
       name: 'events',
       onMessage: (msg: RealtimeMessage) => {
         if (msg.sessionId === sessionId) return;
         
-        if (msg.type === 'update-game-state') {
-          console.log('Realtime Game Update:', msg.gameState);
-
+        if (msg.type === 'update-game-state' || msg.type === 'audit-update') {
           context.ui.webView.postMessage('myWebView', {
-            data: {
-              type: msg.type,
-              gameState: msg.gameState
-            }
+            data: msg
           });
         }
       },
@@ -295,6 +309,42 @@ Devvit.addCustomPostType({
 
         case 'start-solo':
           channel.unsubscribe();
+          break;
+
+        // Add audit log handling
+        case 'add-audit':
+          const auditKey = `puzzle:${context.postId}:audit`;
+          const existingAudit = await context.redis.get(auditKey);
+          const auditLog = existingAudit ? JSON.parse(existingAudit) : [];
+          
+          // Add new entry to audit log
+          auditLog.push({
+            username: msg.username,
+            action: msg.action
+          });
+
+          // Keep only last 100 moves
+          if (auditLog.length > 100) {
+            auditLog.shift();
+          }
+
+          // Save audit log
+          await context.redis.set(auditKey, JSON.stringify(auditLog));
+
+          // Broadcast audit update to all clients
+          context.ui.webView.postMessage('myWebView', {
+            data: {
+              type: 'audit-update',
+              auditLog
+            }
+          });
+
+          // Also send through realtime channel
+          await channel.send({
+            type: 'audit-update',
+            auditLog,
+            sessionId: msg.sessionId
+          });
           break;
 
         default:
