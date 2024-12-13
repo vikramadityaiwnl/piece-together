@@ -112,10 +112,6 @@ class App {
 
     if (message.data.type === 'initialData') {
       this.handleInitialData(message.data.data);
-      // Initialize audit panel with initial data
-      if (message.data.data.auditLog) {
-        this.updateAuditPanel(message.data.data.auditLog);
-      }
     }
 
     if (message.data.type === 'show-toast') {
@@ -142,14 +138,14 @@ class App {
   }
 
   /**
-   * Update the audit panel with new entries
+   * Update the audit panel with new entries and update the leaderboard.
    * @param {Array} auditLog - Array of audit entries
    */
   updateAuditPanel(auditLog) {
-    const auditHtml = auditLog.map(entry => {
+    const auditHtml = [...auditLog].reverse().map(entry => {
       const time = new Date(entry.action.timestamp).toLocaleTimeString();
-      const from = entry.action.from
-      const to = entry.action.to
+      const from = entry.action.from;
+      const to = entry.action.to;
       const pieceId = entry.action.pieceId;
       
       return `
@@ -170,6 +166,92 @@ class App {
   
     this.auditPanel.innerHTML = auditHtml;
     this.auditPanel.scrollTop = this.auditPanel.scrollHeight;
+
+    // Update leaderboard
+    this.updateLeaderboard(auditLog);
+  }
+
+  /**
+   * Update the leaderboard based on the audit log.
+   * @param {Array} auditLog - Array of audit entries
+   */
+  updateLeaderboard(auditLog) {
+    const scores = {};
+    const movesCount = {};
+    const correctMovesCount = {};
+    const incorrectMovesCount = {};
+
+    auditLog.forEach(entry => {
+      const { username, action, avatar } = entry;
+      const { from, to, pieceId } = action;
+
+      // Ensure puzzleBoard and pieces are defined
+      if (!this.puzzleBoard || !this.puzzleBoard.pieces) return;
+
+      const piece = this.puzzleBoard.pieces.find(p => p.id === pieceId);
+      if (!piece) return;
+
+      const isCorrect = piece.correct_position === parseInt(to.split('-')[1] - 1);
+
+      if (!scores[username]) {
+        scores[username] = { score: 0, avatar };
+        movesCount[username] = 0;
+        correctMovesCount[username] = 0;
+        incorrectMovesCount[username] = 0;
+      }
+
+      movesCount[username] += 1;
+
+      if (isCorrect) {
+        scores[username].score += 5;
+        correctMovesCount[username] += 1;
+      } else {
+        scores[username].score -= 2;
+        incorrectMovesCount[username] += 1;
+      }
+    });
+
+    const sortedScores = Object.entries(scores).sort((a, b) => b[1].score - a[1].score);
+    const leaderboardHtml = sortedScores.map(([username, { score, avatar }]) => `
+      <div class="leaderboard-entry">
+        <img src="${avatar}" alt="${username}'s avatar" class="leaderboard-avatar">
+        <span class="leaderboard-username">${username}</span>
+        <span class="leaderboard-score">${score}</span>
+      </div>
+    `).join('');
+
+    document.querySelector('#rankings-content .rankings-list').innerHTML = leaderboardHtml;
+
+    // Update MVPs
+    const mostActivePlayer = Object.entries(movesCount).sort((a, b) => b[1] - a[1])[0];
+    const mostAccuratePlayer = Object.entries(correctMovesCount).sort((a, b) => b[1] - a[1])[0];
+    const mostAdventurousPlayer = Object.entries(incorrectMovesCount).sort((a, b) => b[1] - a[1])[0];
+
+    const mvpHtml = `
+      <div class="mvp-card">
+        <img src="${mostActivePlayer ? scores[mostActivePlayer[0]].avatar : ''}" alt="Avatar" class="mvp-avatar">
+        <div class="mvp-content">
+          <div class="mvp-title">Most Active Player</div>
+          <div class="mvp-subtitle">${mostActivePlayer ? mostActivePlayer[0] : 'No moves made yet'}</div>
+        </div>
+      </div>
+      <div class="mvp-card">
+        <img src="${mostAccuratePlayer ? scores[mostAccuratePlayer[0]].avatar : ''}" alt="Avatar" class="mvp-avatar">
+        <div class="mvp-content">
+          <div class="mvp-title">Most Accurate Player</div>
+          <div class="mvp-subtitle">${mostAccuratePlayer ? mostAccuratePlayer[0] : 'No correct moves yet'}</div>
+        </div>
+      </div>
+      <div class="mvp-card">
+        <img src="${mostAdventurousPlayer ? scores[mostAdventurousPlayer[0]].avatar : ''}" alt="Avatar" class="mvp-avatar">
+        <div class="mvp-content">
+          <div class="mvp-title">Most Adventurous Player</div>
+          <div class="mvp-subtitle">${mostAdventurousPlayer ? mostAdventurousPlayer[0] : 'No incorrect moves yet'}</div>
+        </div>
+      </div>
+    `;
+
+    document.querySelector('#mvp-content').innerHTML = mvpHtml;
   }
 
   /**
@@ -207,6 +289,10 @@ class App {
     }
     
     this.initializePuzzleBoard(mode, null, image);
+
+    if (mode === 'coop') {
+      if (this.initialData.auditLog) this.updateAuditPanel(this.initialData.auditLog);
+    }
   }
 
   /**

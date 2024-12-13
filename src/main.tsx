@@ -316,10 +316,12 @@ Devvit.addCustomPostType({
           const auditKey = `puzzle:${context.postId}:audit`;
           const existingAudit = await context.redis.get(auditKey);
           const auditLog = existingAudit ? JSON.parse(existingAudit) : [];
+          const user = await context.reddit.getCurrentUser();
           
           // Add new entry to audit log
           auditLog.push({
             username: msg.username,
+            avatar: await user?.getSnoovatarUrl() || '',
             action: msg.action
           });
 
