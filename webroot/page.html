@@ -39,7 +39,7 @@
         <div id="puzzleBoard" class="puzzle-container"></div>
         
         <div class="bottom-bar">
-          <div class="reaction-panel">
+          <div class="reaction-panel" data-mode="coop">
             <button class="reaction-button" data-emoji="👏">
               <span>👏</span>
             </button>
@@ -69,15 +69,16 @@
         </div>
 
         <div id="pieces-panel" class="panel-content active">
-          <div id="piecesTray" class="pieces-tray"></div>
+          <div id="piecesTray"></div>
         </div>
 
-        <div class="panel-content" id="leaderboard-panel">
-          <div class="leaderboard-tabs">
-            <button class="tab active" data-tab="rankings">Rankings</button>
-            <button class="tab" data-tab="mvp">MVPs</button>
+        <div id="leaderboard-panel" class="panel-content">
+          <div class="sub-panel-tabs">
+            <button class="sub-tab active" data-subtab="rankings">🔢 Rankings</button>
+            <button class="sub-tab" data-subtab="mvp">🌟 MVPs</button>
           </div>
-          <div class="tab-content active" id="rankings-content">
+          
+          <div class="sub-panel-content active" id="rankings-content">
             <div class="rankings-list">
               <div class="placeholder-content">
                 <div class="placeholder-icon">🏆</div>
@@ -90,26 +91,25 @@
               </div>
             </div>
           </div>
-  
-          <div class="tab-content" id="mvp-content">
-            <div class="mvp-categories">
-              <div class="mvp-card" id="most-moves">
-                <div class="placeholder-content">
-                  <div class="placeholder-icon">🔄</div>
-                  <div class="placeholder-title">Most Active Player</div>
-                  <div class="placeholder-subtitle">No moves made yet</div>
-                </div>
+
+          <div class="sub-panel-content" id="mvp-content">
+            <div class="mvp-card">
+              <div class="placeholder-content">
+                <div class="placeholder-icon">🔄</div>
+                <div class="placeholder-title">Most Active Player</div>
+                <div class="placeholder-subtitle">No moves made yet</div>
               </div>
-  
-              <div class="mvp-card" id="most-correct"></div>
+            </div>
+
+            <div class="mvp-card">
               <div class="placeholder-content">
                 <div class="placeholder-icon">✅</div>
                 <div class="placeholder-title">Most Accurate Player</div>
                 <div class="placeholder-subtitle">No correct moves yet</div>
               </div>
             </div>
-  
-            <div class="mvp-card" id="most-incorrect">
+
+            <div class="mvp-card">
               <div class="placeholder-content">
                 <div class="placeholder-icon">❌</div>
                 <div class="placeholder-title">Most Adventurous Player</div>
@@ -119,7 +119,7 @@
           </div>
         </div>
 
-        <div class="panel-content" id="audit-panel">
+        <div id="audit-panel" class="panel-content">
           <div class="placeholder-content" id="auditPlaceholder">
             <div class="placeholder-icon">📝</div>
             <div class="placeholder-title">No Activity Yet</div>

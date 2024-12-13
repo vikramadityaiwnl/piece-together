@@ -46,9 +46,50 @@ class App {
     this.soloButton.addEventListener('click', () => this.startGame('solo'));
     this.coopButton.addEventListener('click', () => this.startGame('coop'));
 
+    // Update panel toggle handlers
     this.panelToggles.forEach(button => {
-      button.addEventListener('click', () => this.togglePanel(button.dataset.panel));
+      button.addEventListener('click', () => {
+        // Remove active class from all toggles first
+        this.panelToggles.forEach(t => t.classList.remove('active'));
+        // Add active class to clicked toggle
+        button.classList.add('active');
+
+        // Hide all panels first
+        this.panelContents.forEach(p => p.classList.remove('active'));
+        // Show the selected panel
+        const panelId = `${button.dataset.tab}-panel`;
+        document.getElementById(panelId)?.classList.add('active');
+      });
     });
+
+    // Add sub-panel tab handlers
+    document.querySelectorAll('.sub-tab').forEach(button => {
+      button.addEventListener('click', () => {
+        const parentPanel = button.closest('.panel-content');
+        const subtabName = button.dataset.subtab;
+        
+        // Update active state of tabs
+        parentPanel.querySelectorAll('.sub-tab').forEach(tab => {
+          tab.classList.toggle('active', tab === button);
+        });
+        
+        // Update visibility of content panels
+        parentPanel.querySelectorAll('.sub-panel-content').forEach(content => {
+          content.classList.toggle('active', content.id === `${subtabName}-content`);
+        });
+      });
+    });
+
+    // Add handler for back button to reset mode elements
+    if (this.backButton) {
+      this.backButton.addEventListener('click', () => {
+        if (this.puzzleBoard) {
+          this.puzzleBoard.resetModeElements();
+        }
+        this.gameScreen.style.display = 'none';
+        this.mainMenuScreen.style.display = 'block';
+      });
+    }
   }
 
   /**

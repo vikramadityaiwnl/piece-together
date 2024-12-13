@@ -39,6 +39,9 @@ class PuzzleBoard {
       this.timerElement.classList.add('active');
     }
 
+    // Show/hide mode-specific elements
+    this.initializeModeElements(mode);
+    
     this.boardElement = document.getElementById('puzzleBoard');
     this.trayElement = document.getElementById('piecesTray');
     this.selectedPiece = null;
@@ -46,6 +49,63 @@ class PuzzleBoard {
     this.initBoard(isNewGame ? null : gameState.board);
     this.initTray(isNewGame ? null : gameState.tray);
     this.setupEventListeners();
+  }
+
+  /**
+   * Initialize mode-specific elements
+   * @param {'solo' | 'coop'} mode - The game mode
+   */
+  initializeModeElements(mode) {
+    // Handle timer visibility
+    if (mode === 'solo') {
+      this.timerElement.classList.add('active');
+    } else {
+      this.timerElement.classList.remove('active');
+    }
+
+    // Handle reactions and audit elements
+    document.querySelectorAll('[data-mode="coop"]').forEach(element => {
+      if (mode === 'coop') {
+        element.classList.add('active');
+      } else {
+        element.classList.remove('active');
+      }
+    });
+
+    // Update panel visibility
+    if (mode === 'solo') {
+      document.getElementById('leaderboard-panel').style.opacity = '0';
+      document.getElementById('audit-panel').style.opacity = '0';
+      document.getElementById('leaderboard-panel').style.pointerEvents = 'none';
+      document.getElementById('audit-panel').style.pointerEvents = 'none';
+    } else {
+      document.getElementById('leaderboard-panel').style.opacity = '1';
+      document.getElementById('audit-panel').style.opacity = '1';
+      document.getElementById('leaderboard-panel').style.pointerEvents = 'auto';
+      document.getElementById('audit-panel').style.pointerEvents = 'auto';
+    }
+  }
+
+  // Add new method to reset mode-specific elements
+  resetModeElements() {
+    // Reset timer
+    this.timerElement.classList.remove('active');
+    this.stopTimer();
+    
+    // Reset all coop elements
+    document.querySelectorAll('[data-mode="coop"]').forEach(element => {
+      element.classList.remove('active');
+    });
+    
+    // Reset panels
+    const panels = ['leaderboard-panel', 'audit-panel'];
+    panels.forEach(panelId => {
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        panel.style.opacity = '1';
+        panel.style.pointerEvents = 'auto';
+      }
+    });
   }
 
   initBoard(boardState = null) {

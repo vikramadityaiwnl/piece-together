@@ -216,7 +216,61 @@ body {
   gap: 0.75rem;
   box-shadow: var(--shadow-lg);
   max-height: 100%;
+}
+
+/* Panel tabs and content */
+.panel-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--background-color);
+  padding: 0.25rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 0.5rem;
+}
+
+.panel-tabs .tab {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-color);
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-align: center;
+}
+
+.panel-tabs .tab.active {
+  background: var(--surface-color);
+  color: var(--primary-color);
+  opacity: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-content {
+  display: none;
+  flex: 1;
   overflow-y: auto;
+}
+
+.panel-content.active {
+  display: block;
+}
+
+#pieces-panel {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Update the pieces tray to fill the panel */
+#piecesTray {
+  height: 100%;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0.5rem;
 }
 
 /* Update the panel tabs styling */
@@ -227,6 +281,7 @@ body {
   padding: 0.25rem;
   border-radius: var(--border-radius);
   justify-content: center;
+  justify-content: space-evenly !important;
 }
 
 #game-screen .side-panel .panel-tabs .tab {
@@ -267,6 +322,58 @@ body {
   display: block;
 }
 
+/* Leaderboard Sub-panel Styles */
+.sub-panel-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--background-color);
+  padding: 0.25rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 0.75rem;
+}
+
+.sub-tab {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-color);
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.sub-tab.active {
+  background: var(--surface-color);
+  color: var(--primary-color);
+  opacity: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+.sub-panel-content {
+  display: none;
+  padding: 0.5rem;
+  overflow-y: auto;
+}
+
+.sub-panel-content.active {
+  display: block;
+}
+
+.mvp-card {
+  background: var(--background-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.mvp-card:last-child {
+  margin-bottom: 0;
+}
+
 /* Bottom Bar */
 .bottom-bar {
   position: relative;
@@ -279,6 +386,7 @@ body {
   box-shadow: var(--shadow-md);
   height: var(--bottom-bar-height);
   margin: 0 0.5rem 0.5rem;
+  justify-content: space-between !important;
 }
 
 /* Button Styles */
@@ -422,4 +530,35 @@ body {
   font-size: 0.875rem;
   color: var(--primary-color);
   line-height: 1.5;
+}
+
+/* Mode-specific visibility */
+[data-mode="coop"] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+[data-mode="coop"].active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#timer {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#timer.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#timer {
+  display: none;
+}
+
+#timer.active {
+  display: flex;
 }
