@@ -1,5 +1,5 @@
 import './createPost.js';
-import { Devvit, useState, useAsync } from '@devvit/public-api';
+import { Devvit, useState, useAsync, useChannel } from '@devvit/public-api';
 import { images } from './images.data.js';
 
 type InitialData = {
@@ -14,6 +14,7 @@ type InitialData = {
     };
     cooldown?: number;
     time?: string;  // Add time to InitialData type
+    sessionId: string;  // Add this line
   };
 };
 
@@ -39,7 +40,24 @@ type ShowToast = {
   message: string;
 }
 
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast;
+type StartCoop = {
+  type: 'start-coop';
+}
+
+type StartSolo = {
+  type: 'start-solo';
+}
+
+type GetGameState = {
+  type: 'get-game-state';
+}
+
+type GetCooldown = {
+  type: 'get-cooldown';
+}
+
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | StartSolo | GetGameState | GetCooldown;
+type RealtimeMessage = UpdateGameState;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -150,6 +168,7 @@ const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<Pu
 Devvit.configure({
   redditAPI: true,
   redis: true,
+  realtime: true,
 });
 
 Devvit.addCustomPostType({
@@ -158,13 +177,14 @@ Devvit.addCustomPostType({
   render: (context) => {
     const [webviewVisible, setWebviewVisible] = useState(false);
     const [hasClicked, setHasClicked] = useState(false);
+    const [sessionId, setSessionId] = useState(Math.random().toString(36).substring(2, 9));
 
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
       const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
       const time = await context.redis.get(`puzzle:${context.postId}:time`);
       const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
-      
+
       // Get cooldown if it exists
       const cooldownKey = `puzzle:${context.postId}:${currUser?.username}:cooldown`;
       const cooldown = await context.redis.get(cooldownKey);
@@ -187,10 +207,29 @@ Devvit.addCustomPostType({
           },
           time,
           gameState: parsedState,
-          cooldown: cooldown ? parseInt(cooldown) : undefined
+          cooldown: cooldown ? parseInt(cooldown) : undefined,
+          sessionId
         },
       };
     });
+
+    const channel = useChannel({
+      name: 'events',
+      onMessage: (msg: RealtimeMessage) => {
+        if (msg.sessionId === sessionId) return;
+        
+        if (msg.type === 'update-game-state') {
+          console.log('Realtime Game Update:', msg.gameState);
+
+          context.ui.webView.postMessage('myWebView', {
+            data: {
+              type: msg.type,
+              gameState: msg.gameState
+            }
+          });
+        }
+      },
+    })
 
     /**
      * Handle messages from the webview.
@@ -203,21 +242,64 @@ Devvit.addCustomPostType({
           const key = `puzzle:${context.postId}:${msg.username}:cooldown`;
           await context.redis.set(key, cooldown.getTime().toString(), {
             expiration: cooldown,
-            nx: true,
           });
+          // Broadcast cooldown update
+          context.ui.webView.postMessage('myWebView', {
+            data: {
+              type: 'cooldown-update',
+              cooldown: cooldown.getTime()
+            }
+          });
+          break;
+
+        case 'get-game-state':
+          const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
+          if (gameState) {
+            context.ui.webView.postMessage('myWebView', {
+              data: {
+                type: 'update-game-state',
+                gameState: JSON.parse(gameState)
+              }
+            });
+          }
+          break;
+
+        case 'get-cooldown':
+          const currUser = await context.reddit.getCurrentUser();
+          if (currUser) {
+            const cooldownKey = `puzzle:${context.postId}:${currUser.username}:cooldown`;
+            const storedCooldown = await context.redis.get(cooldownKey);
+            if (storedCooldown) {
+              context.ui.webView.postMessage('myWebView', {
+                data: {
+                  type: 'cooldown-update',
+                  cooldown: parseInt(storedCooldown)
+                }
+              });
+            }
+          }
           break;
 
         case 'update-game-state':
           await context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState));
-          // add realtime aswell
+          await channel.send(msg)
           break;
 
         case 'show-toast':
           context.ui.webView.postMessage('myWebView', { data: msg });
           break;
 
+        case 'start-coop':
+          channel.subscribe();
+          break;
+
+        case 'start-solo':
+          channel.unsubscribe();
+          break;
+
         default:
-          throw new Error(`Unknown message type: ${msg}`);
+          console.info('Unknown message:', JSON.stringify(msg));
+          break;
       }
     };
 

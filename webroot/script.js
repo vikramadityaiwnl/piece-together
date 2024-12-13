@@ -1,14 +1,14 @@
 import GameManager from './GameManager.js';
 import PuzzleBoard from './PuzzleBoard.js';
 import ToastManager from './ToastManager.js';
+import { sendMessage } from './utils.js';
 
 class App {
   constructor() {
     this.toastManager = new ToastManager();
     this.initializeElements();
     this.setupEventListeners();
-    
-    this.sessionId = this.generateSessionId();
+    this.gameState = null;
   }
 
   /**
@@ -80,12 +80,14 @@ class App {
       });
     });
 
-    // Add handler for back button to reset mode elements
+    // Add handler for back button to reset mode elements and clear state
     if (this.backButton) {
       this.backButton.addEventListener('click', () => {
         if (this.puzzleBoard) {
           this.puzzleBoard.resetModeElements();
+          this.puzzleBoard.resetState();
         }
+        this.gameState = null;
         this.gameScreen.style.display = 'none';
         this.mainMenuScreen.style.display = 'block';
       });
@@ -111,6 +113,20 @@ class App {
     if (message.data.type === 'show-toast') {
       this.toastManager.show(message.data.message, 'warning');
     }
+
+    if (message.data.type === 'update-game-state') {
+      // Update local state to match Redis state
+      if (this.puzzleBoard && this.puzzleBoard.mode === 'coop') {
+        this.puzzleBoard.updateState(message.data.gameState);
+      }
+    }
+
+    if (message.data.type === 'cooldown-update') {
+      // Update cooldown state when received from Redis
+      if (this.puzzleBoard && this.puzzleBoard.mode === 'coop') {
+        this.puzzleBoard.updateCooldown(message.data.cooldown);
+      }
+    }
   }
 
   /**
@@ -119,6 +135,12 @@ class App {
    * 
    */
   startGame(mode) {
+    if (mode === 'coop') {
+      sendMessage('start-coop');
+    } else {
+      sendMessage('start-solo');
+    }
+
     this.mainMenuScreen.style.display = 'none';
     this.gameScreen.style.display = 'block';
     
@@ -134,9 +156,14 @@ class App {
     this.puzzleTitle.textContent = `r/${image.subreddit}`
     
     this.gameManager = new GameManager(mode, this.sessionId);
-    // Only pass gameState for coop mode, null for solo
-    const gameState = mode === 'coop' ? this.initialData.gameState : null;
-    this.initializePuzzleBoard(mode, gameState, image);
+
+    // Request latest state from Redis for coop mode
+    if (mode === 'coop') {
+      sendMessage('get-game-state');
+      sendMessage('get-cooldown');
+    }
+    
+    this.initializePuzzleBoard(mode, null, image);
   }
 
   /**
@@ -155,11 +182,11 @@ class App {
     }
     if (this.mainMenuScreen) {
       this.mainMenuScreen.style.backgroundImage = `url(${assets.mainMenuBackground})`;
-      // Show main menu screen after assets are loaded
       this.mainMenuScreen.style.display = 'block';
       this.gameScreen.style.display = 'none';
     }
     this.initialData = data;
+    this.sessionId = data.sessionId;  // Add this line
     this.setupSoundToggleButton(assets);
 
     this.toastManager.showWelcomeToast(username);
@@ -215,13 +242,6 @@ class App {
       this.initialData.cooldown,
       mode === 'coop' ? image.startedAt : null  // Use startedAt instead of separate time
     );
-  }
-
-  /**
-   * Generate session id
-   */
-  generateSessionId() { 
-    return Math.random().toString(36).substring(2, 9);
   }
 }
 
