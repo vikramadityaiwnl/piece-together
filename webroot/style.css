@@ -90,7 +90,7 @@ body {
   flex-direction: column;
   height: 100%;
   position: relative;
-  padding: 0.5rem 0.5rem calc(var(--bottom-bar-height) + 0.5rem) 0.5rem; /* Add bottom padding to account for absolute bottom bar */
+  padding: 0.5rem;
 }
 
 /* Top Bar */
@@ -103,9 +103,9 @@ body {
   border-radius: var(--border-radius);
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   height: var(--top-bar-height);
+  margin-bottom: 0.5rem;
 }
 
-#game-screen .top-bar #back-button {}
 #game-screen .top-bar #puzzle-title {
   font-size: 1rem;
 }
@@ -113,8 +113,6 @@ body {
   display: flex;
   gap: 0.5rem;
 }
-#game-screen .top-bar #timer .timer-icon {}
-#game-screen .top-bar #timer .timer-text {}
 
 /* Main Content Area */
 .main-content {
@@ -126,19 +124,17 @@ body {
   overflow: auto;
 }
 
-/* Puzzle Board Container - New wrapper */
-.puzzle-container {
+/* Puzzle Section - New container */
+.puzzle-section {
   flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: start;
-  overflow: auto;
-  padding: 0.5rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 100%;
 }
 
-/* Puzzle Board */
-#puzzleBoard {
-  /* Remove width/height constraints, let grid define size */
+/* Puzzle Container */
+.puzzle-container {
   display: grid;
   grid-template-columns: repeat(4, var(--piece-size));
   grid-template-rows: repeat(4, var(--piece-size));
@@ -148,7 +144,9 @@ body {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
-  margin: 0 auto; /* Center horizontally */
+  width: fit-content;
+  height: fit-content;
+  margin: auto;
 }
 
 .puzzle-piece {
@@ -268,14 +266,10 @@ body {
 #game-screen .side-panel .panel-content.active {
   display: block;
 }
-#game-screen .side-panel .leaderboard-tabs {}
 
 /* Bottom Bar */
 .bottom-bar {
-  position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  right: 1rem;
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -284,7 +278,7 @@ body {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
   height: var(--bottom-bar-height);
-  z-index: 10;
+  margin: 0 0.5rem 0.5rem;
 }
 
 /* Button Styles */

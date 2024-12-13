@@ -35,7 +35,31 @@
     </div>
 
     <div class="main-content">
-      <div id="puzzleBoard" class="puzzle-container"></div>
+      <div class="puzzle-section">
+        <div id="puzzleBoard" class="puzzle-container"></div>
+        
+        <div class="bottom-bar">
+          <div class="reaction-panel">
+            <button class="reaction-button" data-emoji="👏">
+              <span>👏</span>
+            </button>
+            <button class="reaction-button" data-emoji="⭐">
+              <span>⭐</span>
+            </button>
+            <button class="reaction-button" data-emoji="😤">
+              <span>😤</span>
+            </button>
+            <button class="reaction-button" data-emoji="💀">
+              <span>💀</span>
+            </button>
+          </div>
+
+          <button id="hintButton" class="hint-button">
+            <span class="hint-icon">💡</span>
+            <span class="hint-text">Get Hint</span>
+          </button>
+        </div>
+      </div>
       
       <div class="side-panel" id="sidePanel">
         <div class="panel-tabs">
@@ -107,29 +131,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <div class="bottom-bar">
-    <div class="reaction-panel">
-      <button class="reaction-button" data-emoji="👏">
-        <span>👏</span>
-      </button>
-      <button class="reaction-button" data-emoji="⭐">
-        <span>⭐</span>
-      </button>
-      <button class="reaction-button" data-emoji="😤">
-        <span>😤</span>
-      </button>
-      <button class="reaction-button" data-emoji="💀">
-        <span>💀</span>
-      </button>
-    </div>
-
-    <button id="hintButton" class="hint-button">
-      <span class="hint-icon">💡</span>
-      <span class="hint-text">Get Hint</span>
-    </button>
-  </div>
   </div>
 
   <script type="module" src="./script.js"></script>
