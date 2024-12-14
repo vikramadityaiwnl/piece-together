@@ -114,6 +114,8 @@ class App {
 
     if (message.data.type === 'initialData') {
       this.handleInitialData(message.data.data);
+      // Initialize online players from initial data
+      this.updateOnlinePlayers(message.data.data.onlinePlayers);
     }
 
     if (message.data.type === 'show-toast') {
@@ -385,7 +387,15 @@ class App {
 
   // Add new methods for player management
   updateOnlinePlayers(players) {
-    this.onlinePlayers = new Map(players.map(player => [player.username, player]));
+    this.onlinePlayers = this.onlinePlayers || [];
+    players.forEach(newPlayer => {
+      const existingPlayerIndex = this.onlinePlayers.findIndex(player => player.username === newPlayer.username);
+      if (existingPlayerIndex !== -1) {
+        this.onlinePlayers[existingPlayerIndex] = newPlayer;
+      } else {
+        this.onlinePlayers.push(newPlayer);
+      }
+    });
     this.renderOnlinePlayers();
   }
 
@@ -394,7 +404,7 @@ class App {
     const list = document.querySelector('.online-players-list');
     if (!list) return;
 
-    list.innerHTML = Array.from(this.onlinePlayers.values())
+    list.innerHTML = this.onlinePlayers
       .map(({ username, color, avatar }) => `
         <div class="online-player">
           <img src="${avatar}" alt="${username}'s avatar" class="player-avatar">

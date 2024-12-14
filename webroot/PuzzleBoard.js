@@ -22,7 +22,7 @@ class PuzzleBoard {
     this.lastMoveTime = 0;
     
     // Add these new properties
-    this.onlinePlayers = new Map();
+    this.onlinePlayers = [];
     this.playerColor = null;
 
     // Initialize DOM elements first

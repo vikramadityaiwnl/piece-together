@@ -23,6 +23,7 @@ type InitialData = {
     time?: string;  // Add time to InitialData type
     sessionId: string;  // Add this line
     auditLog: any[]; // Add this line
+    onlinePlayers: { username: string, color: string, avatar: string }[]; // Include online players
   };
 };
 
@@ -220,10 +221,10 @@ Devvit.addCustomPostType({
     const [hasClicked, setHasClicked] = useState(false);
     const [sessionId, setSessionId] = useState(Math.random().toString(36).substring(2, 9));
 
-    // Add this state
-    const [onlinePlayers] = useState<{ [key: string]: { color: string, avatar: string } }>({});
+    // Update the state to use an array for better management
+    const [onlinePlayers, setOnlinePlayers] = useState<{ username: string, color: string, avatar: string }[]>([]);
 
-    // Update initialData to include audit log
+    // Update initialData to include audit log and online players
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
       const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
@@ -234,6 +235,11 @@ Devvit.addCustomPostType({
       // Get cooldown if it exists
       const cooldownKey = `puzzle:${context.postId}:${currUser?.username}:cooldown`;
       const cooldown = await context.redis.get(cooldownKey);
+
+      // Get online players if they exist
+      const onlinePlayersKey = `puzzle:${context.postId}:onlinePlayers`;
+      const onlinePlayersData = await context.redis.get(onlinePlayersKey);
+      const parsedOnlinePlayers = onlinePlayersData ? JSON.parse(onlinePlayersData) : [];
 
       // Get both images upfront
       const [coopImage, soloImage] = await Promise.all([
@@ -256,6 +262,7 @@ Devvit.addCustomPostType({
           cooldown: cooldown ? parseInt(cooldown) : undefined,
           sessionId,
           auditLog: auditLog ? JSON.parse(auditLog) : [],
+          onlinePlayers: parsedOnlinePlayers, // Include online players
         },
       };
     });
@@ -265,6 +272,19 @@ Devvit.addCustomPostType({
       name: 'events',
       onMessage: (msg: RealtimeMessage) => {
         if (msg.type === 'online-players-update') {
+          // Merge new players with existing players
+          setOnlinePlayers(prevPlayers => {
+            const updatedPlayers = [...prevPlayers];
+            msg.players.forEach(newPlayer => {
+              const existingPlayerIndex = updatedPlayers.findIndex(player => player.username === newPlayer.username);
+              if (existingPlayerIndex !== -1) {
+                updatedPlayers[existingPlayerIndex] = newPlayer;
+              } else {
+                updatedPlayers.push(newPlayer);
+              }
+            });
+            return updatedPlayers;
+          });
           context.ui.webView.postMessage('myWebView', { data: msg });
         }
         
@@ -281,18 +301,22 @@ Devvit.addCustomPostType({
         if (!currUser) return;
 
         // Assign random color to new player
-        const usedColors = Object.values(onlinePlayers).map(player => player.color);
+        const usedColors = onlinePlayers.map(player => player.color);
         const availableColors = PLAYER_COLORS.filter(c => !usedColors.includes(c));
         const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)] 
-          || PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)];
+          || PLAYER_COLORS[Math.floor(Math.random() * availableColors.length)];
 
-        // Update players map and broadcast
-        onlinePlayers[currUser.username] = { color: randomColor, avatar: await currUser.getSnoovatarUrl() || '' };
+        // Update players array and broadcast
+        const updatedPlayers = [...onlinePlayers, { username: currUser.username, color: randomColor, avatar: await currUser.getSnoovatarUrl() || '' }];
+        setOnlinePlayers(updatedPlayers);
+
+        // Save updated players list to Redis
+        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers));
 
         // Broadcast updated players list
         await channel.send({
           type: 'online-players-update',
-          players: Object.entries(onlinePlayers).map(([username, { color, avatar }]) => ({ username, color, avatar })),
+          players: updatedPlayers,
           sessionId
         });
       },
@@ -301,10 +325,15 @@ Devvit.addCustomPostType({
         if (!currUser) return;
 
         // Remove player and broadcast
-        delete onlinePlayers[currUser.username];
+        const updatedPlayers = onlinePlayers.filter(player => player.username !== currUser.username);
+        setOnlinePlayers(updatedPlayers);
+
+        // Save updated players list to Redis
+        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers));
+
         await channel.send({
           type: 'online-players-update',
-          players: Object.entries(onlinePlayers).map(([username, { color, avatar }]) => ({ username, color, avatar })),
+          players: updatedPlayers,
           sessionId
         });
       }

@@ -753,6 +753,8 @@ body {
   min-width: 200px;
   z-index: 100;
   display: none;
+  max-height: 300px; /* Add max-height */
+  overflow-y: auto; /* Make it scrollable */
 }
 
 .online-players-panel.active {
