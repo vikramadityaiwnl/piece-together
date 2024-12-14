@@ -374,6 +374,10 @@ class App {
    * Initialize the puzzle board with the puzzle pieces.
    */
   initializePuzzleBoard(mode, gameState = null, image) {
+    const currentUser = this.initialData.username;
+    const player = this.onlinePlayers.find(player => player.username === currentUser);
+    const playerColor = player ? player.color : '#3b82f6'; // Default to blue if not found
+
     this.puzzleBoard = new PuzzleBoard(
       image.pieces, 
       mode, 
@@ -381,7 +385,8 @@ class App {
       gameState,
       this.initialData.username,
       this.initialData.cooldown,
-      mode === 'coop' ? image.startedAt : null  // Use startedAt instead of separate time
+      mode === 'coop' ? image.startedAt : null,
+      playerColor // Pass the player color
     );
   }
 
@@ -391,6 +396,7 @@ class App {
     players.forEach(newPlayer => {
       const existingPlayerIndex = this.onlinePlayers.findIndex(player => player.username === newPlayer.username);
       if (existingPlayerIndex !== -1) {
+        // Override existing player entry
         this.onlinePlayers[existingPlayerIndex] = newPlayer;
       } else {
         this.onlinePlayers.push(newPlayer);

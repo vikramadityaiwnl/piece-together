@@ -10,8 +10,9 @@ class PuzzleBoard {
    * @param {string} username - The username.
    * @param {number} [cooldown] - Initial cooldown timestamp.
    * @param {number} [startTime] - Initial start time for countdown timer.
+   * @param {string} playerColor - The color assigned to the player.
    */
-  constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null) {
+  constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null, playerColor) {
     // Initialize properties
     this.pieces = pieces;
     this.mode = mode;
@@ -23,7 +24,7 @@ class PuzzleBoard {
     
     // Add these new properties
     this.onlinePlayers = [];
-    this.playerColor = null;
+    this.playerColor = playerColor; // Store the player color
 
     // Initialize DOM elements first
     this.boardElement = document.getElementById('puzzleBoard');
@@ -160,6 +161,7 @@ class PuzzleBoard {
       boardState.forEach((state, index) => {
         const cell = cells[index];
         cell.style.backgroundImage = state.backgroundImage;
+        cell.dataset.id = state.pieceId || ''; // Add piece ID data
       });
     }
   }
@@ -253,7 +255,7 @@ class PuzzleBoard {
     
     const isFromTray = piece.classList.contains('tray-piece');
     const borderStyle = highlight ? 
-      '2px solid #3b82f6' : 
+      `2px solid ${this.playerColor}` : 
       (isFromTray ? '1px solid #ccc' : '1px solid #e2e8f0');
     piece.style.border = borderStyle;
   }
@@ -263,6 +265,11 @@ class PuzzleBoard {
    * @param {HTMLElement} piece - The piece element to select.
    */
   async selectPiece(piece) {
+    if (this.selectedPiece === piece) {
+      this.deselectPiece();
+      return;
+    }
+
     if (this.selectedPiece) {
       this.highlightPiece(this.selectedPiece, false);
     }
@@ -271,9 +278,8 @@ class PuzzleBoard {
     this.selectedPiece = piece;
     this.highlightPiece(piece);
 
-    // Then check cooldown and revert if needed
+    // Check cooldown but do not deselect the piece
     if (!(await this.checkCooldown())) {
-      this.deselectPiece();
       return;
     }
 
@@ -302,18 +308,18 @@ class PuzzleBoard {
    * Place a piece on the board.
    * @param {HTMLElement} cell - The target cell element.
    */
-  placePieceOnBoard(cell) {
+  async placePieceOnBoard(cell) {
     if (!this.selectedPiece) return;
 
     // Check cooldown before allowing placement
-    if (this.mode === 'coop' && !this.checkCooldown()) {
-      this.deselectPiece();
+    if (this.mode === 'coop' && !(await this.checkCooldown())) {
       return;
     }
 
     const isFromTray = this.selectedPiece.classList.contains('tray-piece');
     const selectedImage = this.selectedPiece.style.backgroundImage;
     const targetImage = cell.style.backgroundImage;
+    const pieceId = this.selectedPiece.dataset.id; // Keep track of the piece ID
 
     // If target cell has a piece and we're coming from tray, 
     // find empty tray slot for the displaced piece
@@ -330,40 +336,27 @@ class PuzzleBoard {
       emptySlot.style.backgroundSize = 'cover';
       emptySlot.style.backgroundPosition = 'center';
       emptySlot.style.cursor = 'pointer';
+      emptySlot.dataset.id = cell.dataset.id; // Add piece ID data
     }
 
     // Place selected piece in target cell
     cell.style.backgroundImage = selectedImage;
+    cell.dataset.id = pieceId; // Add piece ID data
     
     if (isFromTray) {
       this.selectedPiece.style.backgroundImage = '';
       this.selectedPiece.style.border = '1px dashed #cbd5e1';
       this.selectedPiece.style.cursor = 'default';
+      this.selectedPiece.dataset.id = ''; // Clear piece ID data
     } else {
       // Handle board-to-board movement
       if (targetImage) {
         this.selectedPiece.style.backgroundImage = targetImage;
+        this.selectedPiece.dataset.id = cell.dataset.id; // Add piece ID data
       } else {
         this.selectedPiece.style.backgroundImage = '';
+        this.selectedPiece.dataset.id = ''; // Clear piece ID data
       }
-    }
-
-    // Create audit log entry
-    if (this.mode === 'coop') {
-      const fromPosition = this.selectedPiece.dataset.from;
-      const toPosition = cell.dataset.from;
-      const pieceId = this.selectedPiece.dataset.id;
-      
-      sendMessage('add-audit', {
-        username: this.username,
-        sessionId: this.sessionId,
-        action: {
-          from: fromPosition,
-          to: toPosition,
-          pieceId,
-          timestamp: Date.now()
-        }
-      });
     }
 
     // Update cooldown state
@@ -373,7 +366,7 @@ class PuzzleBoard {
         username: this.username,
         sessionId: this.sessionId
       });
-      this.saveGameState();
+      this.saveGameState(cell.dataset.from, this.selectedPiece.dataset.from, pieceId); // Pass piece ID to saveGameState
     }
 
     this.deselectPiece();
@@ -443,11 +436,12 @@ class PuzzleBoard {
    * Save the current game state.
    * Only used in co-op mode.
    */
-  saveGameState() {
+  saveGameState(toPosition, fromPosition, pieceId) {
     if (this.mode !== 'coop') return;
 
     const boardState = Array.from(this.boardElement.children).map(cell => ({
       backgroundImage: cell.style.backgroundImage,
+      pieceId: cell.dataset.id || null,
     }));
 
     const trayState = Array.from(this.trayElement.children).map(slot => ({
@@ -459,6 +453,18 @@ class PuzzleBoard {
     sendMessage('update-game-state', {
       gameState,
       sessionId: this.sessionId
+    });
+
+    // Create audit log entry
+    sendMessage('add-audit', {
+      username: this.username,
+      sessionId: this.sessionId,
+      action: {
+        from: fromPosition,
+        to: toPosition,
+        pieceId: pieceId || '', // Ensure pieceId is not undefined
+        timestamp: Date.now()
+      }
     });
   }
 
