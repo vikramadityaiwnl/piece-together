@@ -227,26 +227,28 @@ class App {
     const mostAccuratePlayer = Object.entries(correctMovesCount).sort((a, b) => b[1] - a[1])[0];
     const mostAdventurousPlayer = Object.entries(incorrectMovesCount).sort((a, b) => b[1] - a[1])[0];
 
+    const dummyProfile = this.initialData.assets.dummyProfile;
+
     const mvpHtml = `
       <div class="mvp-card">
-        <img src="${mostActivePlayer ? scores[mostActivePlayer[0]].avatar : ''}" alt="Avatar" class="mvp-avatar">
+        <img src="${mostActivePlayer ? scores[mostActivePlayer[0]].avatar : dummyProfile}" alt="Avatar" class="mvp-avatar">
         <div class="mvp-content">
           <div class="mvp-title">Most Active Player</div>
-          <div class="mvp-subtitle">${mostActivePlayer ? mostActivePlayer[0] : 'No moves made yet'}</div>
+          <div class="mvp-subtitle">${mostActivePlayer ? mostActivePlayer[0] : '-'}</div>
         </div>
       </div>
       <div class="mvp-card">
-        <img src="${mostAccuratePlayer ? scores[mostAccuratePlayer[0]].avatar : ''}" alt="Avatar" class="mvp-avatar">
+        <img src="${mostAccuratePlayer && mostAccuratePlayer[0] !== mostActivePlayer[0] ? scores[mostAccuratePlayer[0]].avatar : dummyProfile}" alt="Avatar" class="mvp-avatar">
         <div class="mvp-content">
           <div class="mvp-title">Most Accurate Player</div>
-          <div class="mvp-subtitle">${mostAccuratePlayer ? mostAccuratePlayer[0] : 'No correct moves yet'}</div>
+          <div class="mvp-subtitle">${mostAccuratePlayer && mostAccuratePlayer[0] !== mostActivePlayer[0] ? mostAccuratePlayer[0] : '-'}</div>
         </div>
       </div>
       <div class="mvp-card">
-        <img src="${mostAdventurousPlayer ? scores[mostAdventurousPlayer[0]].avatar : ''}" alt="Avatar" class="mvp-avatar">
+        <img src="${mostAdventurousPlayer && mostAdventurousPlayer[0] !== mostActivePlayer[0] && mostAdventurousPlayer[0] !== mostAccuratePlayer[0] ? scores[mostAdventurousPlayer[0]].avatar : dummyProfile}" alt="Avatar" class="mvp-avatar">
         <div class="mvp-content">
           <div class="mvp-title">Most Adventurous Player</div>
-          <div class="mvp-subtitle">${mostAdventurousPlayer ? mostAdventurousPlayer[0] : 'No incorrect moves yet'}</div>
+          <div class="mvp-subtitle">${mostAdventurousPlayer && mostAdventurousPlayer[0] !== mostActivePlayer[0] && mostAdventurousPlayer[0] !== mostAccuratePlayer[0] ? mostAdventurousPlayer[0] : '-'}</div>
         </div>
       </div>
     `;

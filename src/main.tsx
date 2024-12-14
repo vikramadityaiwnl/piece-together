@@ -94,6 +94,7 @@ type Assets = {
   soundOff: string;
   mainMenuBackground: string;
   backgroundMusic: string;
+  dummyProfile: string;
 };
 
 /**
@@ -108,6 +109,7 @@ const getAssets = (context: Devvit.Context): Assets => ({
   soundOff: context.assets.getURL('game/sound_off.png'),
   mainMenuBackground: context.assets.getURL('game/main_menu_background.png'),
   backgroundMusic: context.assets.getURL('game/background_music.mp3'),
+  dummyProfile: context.assets.getURL('game/dummy_profile.png'),
 });
 
 const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<PuzzlePieceImage> => {
