@@ -478,13 +478,14 @@ class PuzzleBoard {
 
   updateState(gameState) {
     if (!gameState) return;
-    
+
     const boardPieces = this.boardElement.children;
     const trayPieces = this.trayElement.children;
 
     gameState.board.forEach((state, index) => {
       if (boardPieces[index]) {
         boardPieces[index].style.backgroundImage = state.backgroundImage;
+        boardPieces[index].dataset.id = state.pieceId || '';
       }
     });
 

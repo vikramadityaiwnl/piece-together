@@ -114,8 +114,6 @@ class App {
 
     if (message.data.type === 'initialData') {
       this.handleInitialData(message.data.data);
-      // Initialize online players from initial data
-      this.updateOnlinePlayers(message.data.data.onlinePlayers);
     }
 
     if (message.data.type === 'show-toast') {
@@ -375,6 +373,7 @@ class App {
    */
   initializePuzzleBoard(mode, gameState = null, image) {
     const currentUser = this.initialData.username;
+    this.onlinePlayers = this.onlinePlayers || []; // Ensure onlinePlayers is defined
     const player = this.onlinePlayers.find(player => player.username === currentUser);
     const playerColor = player ? player.color : '#3b82f6'; // Default to blue if not found
 
