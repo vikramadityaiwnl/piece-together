@@ -151,6 +151,20 @@ class App {
     if (message.data.type === 'send-emoji') {
       this.renderFloatingEmoji(message.data.emoji);
     }
+
+    // Handle highlight event
+    if (message.data.type === 'highlight-piece') {
+      if (this.puzzleBoard) {
+        this.puzzleBoard.handleHighlight(message.data.pieceId, message.data.color);
+      }
+    }
+
+    // Handle deselect event
+    if (message.data.type === 'deselect-piece') {
+      if (this.puzzleBoard) {
+        this.puzzleBoard.handleDeselect(message.data.pieceId);
+      }
+    }
   }
 
   /**

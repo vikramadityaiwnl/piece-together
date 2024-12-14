@@ -102,9 +102,22 @@ type SendEmoji = {
   sessionId: string;
 };
 
+type HighlightPiece = {
+  type: 'highlight-piece';
+  pieceId: string;
+  color: string;
+  sessionId: string;
+};
+
+type DeselectPiece = {
+  type: 'deselect-piece';
+  pieceId: string;
+  sessionId: string;
+};
+
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji;
-type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece;
+type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -299,6 +312,14 @@ Devvit.addCustomPostType({
         if (msg.type === 'update-game-state' || msg.type === 'audit-update' || msg.type === 'send-emoji') {
           context.ui.webView.postMessage('myWebView', { data: msg });
         }
+
+        if (msg.type === 'highlight-piece') {
+          context.ui.webView.postMessage('myWebView', { data: msg });
+        }
+
+        if (msg.type === 'deselect-piece') {
+          context.ui.webView.postMessage('myWebView', { data: msg });
+        }
       },
       onSubscribed: async () => {
         const currUser = await context.reddit.getCurrentUser();
@@ -452,6 +473,14 @@ Devvit.addCustomPostType({
           break;
 
         case 'send-emoji':
+          await channel.send(msg);
+          break;
+
+        case 'highlight-piece':
+          await channel.send(msg);
+          break;
+
+        case 'deselect-piece':
           await channel.send(msg);
           break;
 

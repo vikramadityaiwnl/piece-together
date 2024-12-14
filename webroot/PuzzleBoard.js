@@ -257,13 +257,14 @@ class PuzzleBoard {
    * Highlight or unhighlight a piece
    * @param {HTMLElement} piece - The piece to highlight
    * @param {boolean} [highlight=true] - Whether to highlight or unhighlight
+   * @param {string} [color] - The color to use for highlighting
    */
-  highlightPiece(piece, highlight = true) {
+  highlightPiece(piece, highlight = true, color = this.playerColor) {
     if (!piece) return;
     
     const isFromTray = piece.classList.contains('tray-piece');
     const borderStyle = highlight ? 
-      `2px solid ${this.playerColor}` : 
+      `2px solid ${color}` : 
       (isFromTray ? '1px solid #ccc' : '1px solid #e2e8f0');
     piece.style.border = borderStyle;
   }
@@ -286,6 +287,13 @@ class PuzzleBoard {
     this.selectedPiece = piece;
     this.highlightPiece(piece);
 
+    // Broadcast highlight event
+    sendMessage('highlight-piece', {
+      pieceId: piece.dataset.id,
+      color: this.playerColor,
+      sessionId: this.sessionId
+    });
+
     // Check cooldown but do not deselect the piece
     if (!(await this.checkCooldown())) {
       return;
@@ -300,7 +308,24 @@ class PuzzleBoard {
   deselectPiece() {
     if (this.selectedPiece) {
       this.highlightPiece(this.selectedPiece, false);
+      // Broadcast deselect event
+      sendMessage('deselect-piece', {
+        pieceId: this.selectedPiece.dataset.id,
+        sessionId: this.sessionId
+      });
       this.selectedPiece = null;
+    }
+  }
+
+  /**
+   * Handle incoming deselect messages.
+   * @param {string} pieceId - The ID of the piece to deselect.
+   */
+  handleDeselect(pieceId) {
+    const piece = [...this.boardElement.children, ...this.trayElement.children]
+      .find(el => el.dataset.id === pieceId);
+    if (piece) {
+      this.highlightPiece(piece, false);
     }
   }
 
@@ -512,6 +537,19 @@ class PuzzleBoard {
   resetState() {
     this.boardState = null;
     this.trayState = null;
+  }
+
+  /**
+   * Handle incoming highlight messages.
+   * @param {string} pieceId - The ID of the piece to highlight.
+   * @param {string} color - The color to use for highlighting.
+   */
+  handleHighlight(pieceId, color) {
+    const piece = [...this.boardElement.children, ...this.trayElement.children]
+      .find(el => el.dataset.id === pieceId);
+    if (piece) {
+      this.highlightPiece(piece, true, color);
+    }
   }
 }
 
