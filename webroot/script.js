@@ -10,6 +10,9 @@ class App {
     this.setupEventListeners();
     this.gameState = null;
     this.initialData = null; // Ensure initialData is defined
+    this.reactionPanel = document.querySelector('.reaction-panel');
+    this.initializeReactions();
+    this.lastEmojiTime = 0; // Add this property to track the last emoji send time
   }
 
   /**
@@ -143,6 +146,28 @@ class App {
     if (message.data.type === 'online-players-update') {
       this.updateOnlinePlayers(message.data.players);
     }
+
+    // Handle emoji sync
+    if (message.data.type === 'send-emoji') {
+      this.renderFloatingEmoji(message.data.emoji);
+    }
+  }
+
+  /**
+   * Render floating emoji animation.
+   * @param {string} emoji - The emoji to render.
+   */
+  renderFloatingEmoji(emoji) {
+    const floatingEmoji = document.createElement('div');
+    floatingEmoji.className = 'floating-emoji';
+    floatingEmoji.textContent = emoji;
+    floatingEmoji.style.left = `${window.innerWidth / 2}px`;
+    floatingEmoji.style.top = `${window.innerHeight / 2}px`;
+    document.body.appendChild(floatingEmoji);
+
+    floatingEmoji.addEventListener('animationend', () => {
+      floatingEmoji.remove();
+    });
   }
 
   /**
@@ -188,8 +213,6 @@ class App {
     const movesCount = {};
     const correctMovesCount = {};
     const incorrectMovesCount = {};
-
-    console.log('Updating leaderboard with audit log:', auditLog);
 
     auditLog.forEach(entry => {
       const { username, action, avatar } = entry;
@@ -419,6 +442,47 @@ class App {
           <span class="player-name">${username}</span>
         </div>
       `).join('');
+  }
+
+  /**
+   * Initialize reaction buttons.
+   */
+  initializeReactions() {
+    if (this.reactionPanel) {
+      this.reactionPanel.addEventListener('click', (event) => {
+        const button = event.target.closest('.reaction-button');
+        if (button) {
+          const emoji = button.dataset.emoji;
+          const now = Date.now();
+          if (now - this.lastEmojiTime >= 250) {
+            this.showFloatingEmoji(emoji, button);
+            this.lastEmojiTime = now;
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Show floating emoji animation.
+   * @param {string} emoji - The emoji to show.
+   * @param {HTMLElement} button - The button element.
+   */
+  showFloatingEmoji(emoji, button) {
+    const floatingEmoji = document.createElement('div');
+    floatingEmoji.className = 'floating-emoji';
+    floatingEmoji.textContent = emoji;
+    const rect = button.getBoundingClientRect();
+    floatingEmoji.style.left = `${rect.left + rect.width / 2}px`;
+    floatingEmoji.style.top = `${rect.top}px`;
+    document.body.appendChild(floatingEmoji);
+
+    floatingEmoji.addEventListener('animationend', () => {
+      floatingEmoji.remove();
+    });
+
+    // Send emoji to realtime
+    sendMessage('send-emoji', { emoji, username: this.initialData.username, sessionId: this.sessionId });
   }
 }
 

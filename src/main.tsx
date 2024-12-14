@@ -95,9 +95,16 @@ type OnlinePlayersUpdate = {
   sessionId: string;
 };
 
+type SendEmoji = {
+  type: 'send-emoji';
+  emoji: string;
+  username: string;
+  sessionId: string;
+};
+
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate;
-type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji;
+type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -289,7 +296,7 @@ Devvit.addCustomPostType({
         
         if (msg.sessionId === sessionId) return;
 
-        if (msg.type === 'update-game-state' || msg.type === 'audit-update') {
+        if (msg.type === 'update-game-state' || msg.type === 'audit-update' || msg.type === 'send-emoji') {
           context.ui.webView.postMessage('myWebView', { data: msg });
         }
       },
@@ -442,6 +449,10 @@ Devvit.addCustomPostType({
             auditLog,
             sessionId: msg.sessionId
           });
+          break;
+
+        case 'send-emoji':
+          await channel.send(msg);
           break;
 
         default:

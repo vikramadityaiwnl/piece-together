@@ -820,3 +820,32 @@ body {
 .online-players:hover {
   background-color: #45a049; /* Darker green on hover */
 }
+
+/* Floating Emoji Styles */
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(10px, -25px);
+  }
+  50% {
+    transform: translate(-10px, -50px);
+  }
+  75% {
+    transform: translate(10px, -75px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, -100px);
+  }
+}
+
+.floating-emoji {
+  position: absolute;
+  font-size: 2rem;
+  animation: floatUp 1s ease-in-out forwards;
+  user-select: none; /* Make unselectable */
+  pointer-events: none; /* Make unhighlightable */
+}
