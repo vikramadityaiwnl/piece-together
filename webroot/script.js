@@ -403,6 +403,13 @@ class App {
       }
     });
     this.renderOnlinePlayers();
+
+    // Update the puzzle board with the new player color if the current user is found
+    const currentUser = this.initialData.username;
+    const player = this.onlinePlayers.find(player => player.username === currentUser);
+    if (player && this.puzzleBoard) {
+      this.puzzleBoard.updatePlayerColor(player.color);
+    }
   }
 
   // Update the renderOnlinePlayers method to include avatars

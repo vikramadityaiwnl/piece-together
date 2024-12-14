@@ -145,6 +145,14 @@ class PuzzleBoard {
     });
   }
 
+  /**
+   * Update the player color.
+   * @param {string} color - The new color assigned to the player.
+   */
+  updatePlayerColor(color) {
+    this.playerColor = color;
+  }
+
   initBoard(boardState = null) {
     this.boardState = boardState;
     this.boardElement.innerHTML = '';
