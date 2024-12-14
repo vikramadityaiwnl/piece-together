@@ -2,6 +2,13 @@ import './createPost.js';
 import { Devvit, useState, useAsync, useChannel } from '@devvit/public-api';
 import { images } from './images.data.js';
 
+// Add these constants at the top
+const PLAYER_COLORS = [
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+  '#FFEEAD', '#D4A5A5', '#9B89B3', '#FF9999',
+  '#77DD77', '#89ABE3', '#FCB7AF', '#B19CD9'
+];
+
 type InitialData = {
   type: 'initialData';
   data: {
@@ -45,6 +52,10 @@ type StartCoop = {
   type: 'start-coop';
 }
 
+type LeaveCoop = {
+  type: 'leave-coop';
+}
+
 type StartSolo = {
   type: 'start-solo';
 }
@@ -70,9 +81,22 @@ type AddAudit = {
   };
 }
 
+type AuditUpdate = {
+  type: 'audit-update';
+  auditLog: any[];
+  sessionId: string;
+}
+
+// Add new types for color management
+type OnlinePlayersUpdate = {
+  type: 'online-players-update';
+  players: { username: string, color: string, avatar: string }[]; // Include avatar
+  sessionId: string;
+};
+
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | StartSolo | GetGameState | GetCooldown | AddAudit;
-type RealtimeMessage = UpdateGameState | { type: 'audit-update'; auditLog: any[]; sessionId: string; };
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate;
+type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -196,6 +220,9 @@ Devvit.addCustomPostType({
     const [hasClicked, setHasClicked] = useState(false);
     const [sessionId, setSessionId] = useState(Math.random().toString(36).substring(2, 9));
 
+    // Add this state
+    const [onlinePlayers] = useState<{ [key: string]: { color: string, avatar: string } }>({});
+
     // Update initialData to include audit log
     const initialData = useAsync<InitialData>(async () => {
       const currUser = await context.reddit.getCurrentUser();
@@ -237,14 +264,50 @@ Devvit.addCustomPostType({
     const channel = useChannel({
       name: 'events',
       onMessage: (msg: RealtimeMessage) => {
-        if (msg.sessionId === sessionId) return;
+        if (msg.type === 'online-players-update') {
+          context.ui.webView.postMessage('myWebView', { data: msg });
+        }
         
+        if (msg.sessionId === sessionId) return;
+
         if (msg.type === 'update-game-state' || msg.type === 'audit-update') {
           context.ui.webView.postMessage('myWebView', {
             data: msg
           });
         }
       },
+      onSubscribed: async () => {
+        const currUser = await context.reddit.getCurrentUser();
+        if (!currUser) return;
+
+        // Assign random color to new player
+        const usedColors = Object.values(onlinePlayers).map(player => player.color);
+        const availableColors = PLAYER_COLORS.filter(c => !usedColors.includes(c));
+        const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)] 
+          || PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)];
+
+        // Update players map and broadcast
+        onlinePlayers[currUser.username] = { color: randomColor, avatar: await currUser.getSnoovatarUrl() || '' };
+
+        // Broadcast updated players list
+        await channel.send({
+          type: 'online-players-update',
+          players: Object.entries(onlinePlayers).map(([username, { color, avatar }]) => ({ username, color, avatar })),
+          sessionId
+        });
+      },
+      onUnsubscribed: async () => {
+        const currUser = await context.reddit.getCurrentUser();
+        if (!currUser) return;
+
+        // Remove player and broadcast
+        delete onlinePlayers[currUser.username];
+        await channel.send({
+          type: 'online-players-update',
+          players: Object.entries(onlinePlayers).map(([username, { color, avatar }]) => ({ username, color, avatar })),
+          sessionId
+        });
+      }
     })
 
     /**
@@ -307,6 +370,10 @@ Devvit.addCustomPostType({
 
         case 'start-coop':
           channel.subscribe();
+          break;
+
+        case 'leave-coop':
+          channel.unsubscribe();
           break;
 
         case 'start-solo':

@@ -21,6 +21,10 @@ class PuzzleBoard {
     this.initialTime = startTime ? parseInt(startTime) : null;
     this.lastMoveTime = 0;
     
+    // Add these new properties
+    this.onlinePlayers = new Map();
+    this.playerColor = null;
+
     // Initialize DOM elements first
     this.boardElement = document.getElementById('puzzleBoard');
     this.trayElement = document.getElementById('piecesTray');
@@ -67,6 +71,24 @@ class PuzzleBoard {
     }
 
     this.setupEventListeners();
+
+    // Initialize online players panel
+    this.onlinePlayersButton = document.getElementById('online-players-button');
+    this.onlinePlayersPanel = document.getElementById('online-players-panel');
+    
+    if (this.onlinePlayersButton && this.onlinePlayersPanel) {
+      this.onlinePlayersButton.addEventListener('click', () => {
+        this.onlinePlayersPanel.classList.toggle('active');
+      });
+
+      // Close panel when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!this.onlinePlayersButton.contains(e.target) && 
+            !this.onlinePlayersPanel.contains(e.target)) {
+          this.onlinePlayersPanel.classList.remove('active');
+        }
+      });
+    }
   }
 
   /**

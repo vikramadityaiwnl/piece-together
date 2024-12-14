@@ -94,6 +94,8 @@ class App {
         this.gameState = null;
         this.gameScreen.style.display = 'none';
         this.mainMenuScreen.style.display = 'block';
+
+        sendMessage('leave-coop');
       });
     }
   }
@@ -134,6 +136,11 @@ class App {
 
     if (message.data.type === 'audit-update') {
       this.updateAuditPanel(message.data.auditLog);
+    }
+
+    // Add handling for online players update
+    if (message.data.type === 'online-players-update') {
+      this.updateOnlinePlayers(message.data.players);
     }
   }
 
@@ -294,6 +301,7 @@ class App {
 
     if (mode === 'coop') {
       if (this.initialData.auditLog) this.updateAuditPanel(this.initialData.auditLog);
+      if (this.initialData.onlinePlayers) this.updateOnlinePlayers(this.initialData.onlinePlayers);
     }
   }
 
@@ -373,6 +381,27 @@ class App {
       this.initialData.cooldown,
       mode === 'coop' ? image.startedAt : null  // Use startedAt instead of separate time
     );
+  }
+
+  // Add new methods for player management
+  updateOnlinePlayers(players) {
+    this.onlinePlayers = new Map(players.map(player => [player.username, player]));
+    this.renderOnlinePlayers();
+  }
+
+  // Update the renderOnlinePlayers method to include avatars
+  renderOnlinePlayers() {
+    const list = document.querySelector('.online-players-list');
+    if (!list) return;
+
+    list.innerHTML = Array.from(this.onlinePlayers.values())
+      .map(({ username, color, avatar }) => `
+        <div class="online-player">
+          <img src="${avatar}" alt="${username}'s avatar" class="player-avatar">
+          <div class="player-color-badge" style="background-color: ${color}"></div>
+          <span class="player-name">${username}</span>
+        </div>
+      `).join('');
   }
 }
 
