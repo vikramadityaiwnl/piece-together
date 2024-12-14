@@ -169,7 +169,7 @@ class PuzzleBoard {
       boardState.forEach((state, index) => {
         const cell = cells[index];
         cell.style.backgroundImage = state.backgroundImage;
-        cell.dataset.id = state.pieceId || ''; // Add piece ID data
+        cell.dataset.id = state.pieceId; // Add piece ID data
       });
     }
   }
@@ -449,12 +449,12 @@ class PuzzleBoard {
 
     const boardState = Array.from(this.boardElement.children).map(cell => ({
       backgroundImage: cell.style.backgroundImage,
-      pieceId: cell.dataset.id || null,
+      pieceId: cell.dataset.id,
     }));
 
     const trayState = Array.from(this.trayElement.children).map(slot => ({
       backgroundImage: slot.style.backgroundImage,
-      id: slot.dataset.id || null,
+      id: slot.dataset.id,
     }));
 
     const gameState = { board: boardState, tray: trayState };
@@ -470,8 +470,9 @@ class PuzzleBoard {
       action: {
         from: fromPosition,
         to: toPosition,
-        pieceId: pieceId || '', // Ensure pieceId is not undefined
-        timestamp: Date.now()
+        pieceId,
+        timestamp: Date.now(),
+        isCorrect: this.pieces.find(piece => piece.id === pieceId).correct_position === Number(toPosition.split('-')[1]) - 1
       }
     });
   }
@@ -485,14 +486,14 @@ class PuzzleBoard {
     gameState.board.forEach((state, index) => {
       if (boardPieces[index]) {
         boardPieces[index].style.backgroundImage = state.backgroundImage;
-        boardPieces[index].dataset.id = state.pieceId || '';
+        boardPieces[index].dataset.id = state.pieceId;
       }
     });
 
     gameState.tray.forEach((state, index) => {
       if (trayPieces[index]) {
         trayPieces[index].style.backgroundImage = state.backgroundImage;
-        trayPieces[index].dataset.id = state.id || '';
+        trayPieces[index].dataset.id = state.id;
       }
     });
   }

@@ -9,6 +9,7 @@ class App {
     this.initializeElements();
     this.setupEventListeners();
     this.gameState = null;
+    this.initialData = null; // Ensure initialData is defined
   }
 
   /**
@@ -188,17 +189,11 @@ class App {
     const correctMovesCount = {};
     const incorrectMovesCount = {};
 
+    console.log('Updating leaderboard with audit log:', auditLog);
+
     auditLog.forEach(entry => {
       const { username, action, avatar } = entry;
-      const { from, to, pieceId } = action;
-
-      // Ensure puzzleBoard and pieces are defined
-      if (!this.puzzleBoard || !this.puzzleBoard.pieces) return;
-
-      const piece = this.puzzleBoard.pieces.find(p => p.id === pieceId);
-      if (!piece) return;
-
-      const isCorrect = piece.correct_position === parseInt(to.split('-')[1] - 1);
+      const { isCorrect } = action;
 
       if (!scores[username]) {
         scores[username] = { score: 0, avatar };
@@ -324,7 +319,7 @@ class App {
       this.mainMenuScreen.style.display = 'block';
       this.gameScreen.style.display = 'none';
     }
-    this.initialData = data;
+    this.initialData = data; // Ensure initialData is set
     this.sessionId = data.sessionId;  // Add this line
     this.setupSoundToggleButton(assets);
 

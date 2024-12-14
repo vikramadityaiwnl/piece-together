@@ -598,6 +598,9 @@ body {
   color: var(--primary-color);
   font-weight: 600;
   font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .audit-move {

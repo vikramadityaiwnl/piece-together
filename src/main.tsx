@@ -272,7 +272,6 @@ Devvit.addCustomPostType({
       name: 'events',
       onMessage: (msg: RealtimeMessage) => {
         if (msg.type === 'online-players-update') {
-          // Merge new players with existing players
           setOnlinePlayers(prevPlayers => {
             const updatedPlayers = [...prevPlayers];
             msg.players.forEach(newPlayer => {
@@ -291,9 +290,7 @@ Devvit.addCustomPostType({
         if (msg.sessionId === sessionId) return;
 
         if (msg.type === 'update-game-state' || msg.type === 'audit-update') {
-          context.ui.webView.postMessage('myWebView', {
-            data: msg
-          });
+          context.ui.webView.postMessage('myWebView', { data: msg });
         }
       },
       onSubscribed: async () => {
@@ -389,8 +386,8 @@ Devvit.addCustomPostType({
           break;
 
         case 'update-game-state':
-          await context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState));
           await channel.send(msg)
+          context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState));
           break;
 
         case 'show-toast':
