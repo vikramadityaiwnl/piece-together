@@ -20,10 +20,10 @@ type InitialData = {
       coop: PuzzlePieceImage;
     };
     cooldown?: number;
-    time?: string;  // Add time to InitialData type
-    sessionId: string;  // Add this line
-    auditLog: any[]; // Add this line
-    onlinePlayers: { username: string, color: string, avatar: string }[]; // Include online players
+    time?: string; 
+    sessionId: string;
+    auditLog: any[];
+    onlinePlayers: { username: string, color: string, avatar: string }[];
   };
 };
 
@@ -79,7 +79,6 @@ type ShowHint = {
   message: string;
 }
 
-// Add new type for audit log messages
 type AddAudit = {
   type: 'add-audit';
   username: string;
@@ -98,10 +97,9 @@ type AuditUpdate = {
   sessionId: string;
 }
 
-// Add new types for color management
 type OnlinePlayersUpdate = {
   type: 'online-players-update';
-  players: { username: string, color: string, avatar: string }[]; // Include avatar
+  players: { username: string, color: string, avatar: string }[];
   sessionId: string;
 };
 
@@ -221,12 +219,14 @@ const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<Pu
 
   // Cache co-op image and time
   if (mode === 'coop') {
+    const now = Date.now();
     const expiration = new Date(now + 60 * 60 * 1000);
     await Promise.all([
       context.redis.set(`puzzle:${context.postId}:image:coop`, 
         JSON.stringify(puzzleImage), 
         { expiration }
       ),
+      // Fix: Store current timestamp instead of future timestamp
       context.redis.set(`puzzle:${context.postId}:time`,
         now.toString(),
         { expiration }
@@ -236,6 +236,51 @@ const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<Pu
 
   return puzzleImage;
 }
+
+/**
+ * Clear all cached data for a specific puzzle.
+ * @param {Devvit.Context} context - The Devvit context.
+ * @param {string} postId - The post ID.
+ */
+const clearCache = async (context: Devvit.Context, postId: string) => {
+  const keysToDelete = [
+    `puzzle:${postId}:image:coop`,
+    `puzzle:${postId}:time`,
+    `puzzle:${postId}:gameState`,
+    `puzzle:${postId}:audit`,
+    `puzzle:${postId}:onlinePlayers`,
+    `puzzle:${postId}:hint`
+  ];
+
+  await Promise.all(keysToDelete.map(key => context.redis.del(key)));
+};
+
+/**
+ * Check if cache is expired and needs clearing.
+ * @param {Devvit.Context} context - The Devvit context.
+ * @param {string} postId - The post ID.
+ * @returns {Promise<boolean>} True if cache was cleared, false otherwise.
+ */
+const checkAndClearExpiredCache = async (context: Devvit.Context, postId: string): Promise<boolean> => {
+  const timeKey = `puzzle:${postId}:time`;
+  const startTime = await context.redis.get(timeKey);
+  
+  if (!startTime) {
+    return false;
+  }
+
+  const startTimeMs = parseInt(startTime);
+  const now = Date.now();
+  const elapsed = now - startTimeMs;
+  const oneHour = 60 * 60 * 1000;
+
+  if (elapsed >= oneHour) {
+    await clearCache(context, postId);
+    return true;
+  }
+
+  return false;
+};
 
 Devvit.configure({
   redditAPI: true,
@@ -251,31 +296,30 @@ Devvit.addCustomPostType({
     const [hasClicked, setHasClicked] = useState(false);
     const [sessionId, setSessionId] = useState(Math.random().toString(36).substring(2, 9));
 
-    // Update the state to use an array for better management
     const [onlinePlayers, setOnlinePlayers] = useState<{ username: string, color: string, avatar: string }[]>([]);
 
-    // Update initialData to include audit log and online players
     const initialData = useAsync<InitialData>(async () => {
+      const cacheCleared = await checkAndClearExpiredCache(context, context.postId || 'default');
+      
       const currUser = await context.reddit.getCurrentUser();
-      const gameState = await context.redis.get(`puzzle:${context.postId}:gameState`);
-      const auditLog = await context.redis.get(`puzzle:${context.postId}:audit`);
-      const time = await context.redis.get(`puzzle:${context.postId}:time`);
-      const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
-
-      // Get cooldown if it exists
-      const cooldownKey = `puzzle:${context.postId}:${currUser?.username}:cooldown`;
-      const cooldown = await context.redis.get(cooldownKey);
-
-      // Get online players if they exist
-      const onlinePlayersKey = `puzzle:${context.postId}:onlinePlayers`;
-      const onlinePlayersData = await context.redis.get(onlinePlayersKey);
-      const parsedOnlinePlayers = onlinePlayersData ? JSON.parse(onlinePlayersData) : [];
-
-      // Get both images upfront
+      
       const [coopImage, soloImage] = await Promise.all([
         getPuzzleImage(context, 'coop'),
         getPuzzleImage(context, 'solo')
       ]);
+
+      const [gameState, auditLog, time, cooldown, onlinePlayersData] = cacheCleared ? 
+        [null, null, null, null, null] : 
+        await Promise.all([
+          context.redis.get(`puzzle:${context.postId}:gameState`),
+          context.redis.get(`puzzle:${context.postId}:audit`),
+          context.redis.get(`puzzle:${context.postId}:time`),
+          context.redis.get(`puzzle:${context.postId}:${currUser?.username}:cooldown`),
+          context.redis.get(`puzzle:${context.postId}:onlinePlayers`)
+        ]);
+
+      const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
+      const parsedOnlinePlayers = onlinePlayersData ? JSON.parse(onlinePlayersData) : [];
 
       return {
         type: 'initialData',
@@ -287,7 +331,7 @@ Devvit.addCustomPostType({
             coop: coopImage,
             solo: soloImage
           },
-          time,
+          time: time || Date.now().toString(),
           gameState: parsedState,
           cooldown: cooldown ? parseInt(cooldown) : undefined,
           sessionId,
@@ -297,7 +341,6 @@ Devvit.addCustomPostType({
       };
     });
 
-    // Update channel handler
     const channel = useChannel({
       name: 'events',
       onMessage: (msg: RealtimeMessage) => {
