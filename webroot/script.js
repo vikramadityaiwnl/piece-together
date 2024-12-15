@@ -113,6 +113,15 @@ class App {
         sendMessage('get-hint', { username: this.initialData.username });
       });
     }
+
+    // Add event listener for audit piece ID clicks
+    document.getElementById('audit-panel-content').addEventListener('click', (event) => {
+      const pieceIdElement = event.target.closest('.audit-piece-id');
+      if (pieceIdElement) {
+        const pieceId = pieceIdElement.textContent;
+        this.selectPieceById(pieceId);
+      }
+    });
   }
 
   /**
@@ -610,6 +619,18 @@ class App {
     }
 
     this.startGame(mode);
+  }
+
+  /**
+   * Select a piece by its ID.
+   * @param {string} pieceId - The ID of the piece to select.
+   */
+  selectPieceById(pieceId) {
+    const piece = [...this.puzzleBoard.boardElement.children, ...this.puzzleBoard.trayElement.children]
+      .find(el => el.dataset.id === pieceId);
+    if (piece) {
+      this.puzzleBoard.selectPiece(piece);
+    }
   }
 }
 

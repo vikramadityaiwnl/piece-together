@@ -88,6 +88,16 @@ type AddAudit = {
   };
 }
 
+type PuzzleCompletion = {
+  type: 'puzzle-completed';
+  sessionId: string;
+}
+type PostCompletion = {
+  type: 'post-completion';
+  username: string;
+  sessionId: string;
+}
+
 type AuditUpdate = {
   type: 'audit-update';
   auditLog: any[];
@@ -132,8 +142,8 @@ type GetImageUrls = {
 }
 
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls;
-type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | PostCompletion | PuzzleCompletion;
+type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | PuzzleCompletion;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -248,7 +258,6 @@ const checkCacheExpiration = async (context: Devvit.Context) => {
   const oneHour = 60 * 60 * 1000;
 
   if (elapsed >= oneHour) {
-    console.log(`Cache expired. Clearing cache and setting new start time.`);
     await clearCache(context);
     const newStartTime = Date.now();
     await context.redis.set(timeKey, newStartTime.toString(), {
@@ -257,7 +266,6 @@ const checkCacheExpiration = async (context: Devvit.Context) => {
     return { startedAt: newStartTime, expired: true };
   }
 
-  console.log(`Cache is still valid. Start time: ${startTimeMs}`);
   return { startedAt: startTimeMs, expired: false };
 };
 
@@ -268,7 +276,7 @@ Devvit.configure({
 });
 
 Devvit.addCustomPostType({
-  name: 'Webview Example',
+  name: 'Jigsaw Puzzle',
   height: 'tall',
   render: (context) => {
     const [webviewVisible, setWebviewVisible] = useState(false);
@@ -330,6 +338,10 @@ Devvit.addCustomPostType({
         }
         
         if (msg.sessionId === sessionId) return;
+
+        if (msg.type === "puzzle-completed") {
+          // create memorial post
+        }
 
         if (msg.type === 'update-game-state' || msg.type === 'audit-update' || msg.type === 'send-emoji') {
           context.ui.webView.postMessage('myWebView', { data: msg });
@@ -558,6 +570,14 @@ Devvit.addCustomPostType({
             auditLog,
             sessionId: msg.sessionId
           });
+          break;
+
+        case 'post-completion':
+          // upload user completion post to Reddit
+          break;
+
+        case 'puzzle-completed':
+          // puzzle completed in coop mode
           break;
 
         case 'send-emoji':

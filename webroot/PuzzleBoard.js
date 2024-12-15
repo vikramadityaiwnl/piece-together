@@ -1,6 +1,6 @@
 import { sendMessage, getCooldownMessage, formatRemainingTime } from "./utils.js";
 
-class PuzzleBoard {
+export default class PuzzleBoard {
   /**
    * Initialize the puzzle board.
    * @param {Object[]} pieces - The puzzle pieces.
@@ -25,6 +25,7 @@ class PuzzleBoard {
     // Add these new properties
     this.onlinePlayers = [];
     this.playerColor = playerColor; // Store the player color
+    this.isCompleted = false; // Add completed flag
 
     // Initialize DOM elements first
     this.boardElement = document.getElementById('puzzleBoard');
@@ -283,22 +284,20 @@ class PuzzleBoard {
       this.highlightPiece(this.selectedPiece, false);
     }
     
-    // Highlight the piece first
     this.selectedPiece = piece;
     this.highlightPiece(piece);
 
-    // Broadcast highlight event
-    sendMessage('highlight-piece', {
-      pieceId: piece.dataset.id,
-      color: this.playerColor,
-      sessionId: this.sessionId
-    });
+    if (this.mode === 'coop') {
+      sendMessage('select-piece', {
+        pieceId: piece.dataset.id,
+        sessionId: this.sessionId
+      });
+    }
 
-    // Check cooldown but do not deselect the piece
     if (!(await this.checkCooldown())) {
       return;
     }
-
+    
     this.startTimer();
   }
 
@@ -308,11 +307,13 @@ class PuzzleBoard {
   deselectPiece() {
     if (this.selectedPiece) {
       this.highlightPiece(this.selectedPiece, false);
-      // Broadcast deselect event
-      sendMessage('deselect-piece', {
-        pieceId: this.selectedPiece.dataset.id,
-        sessionId: this.sessionId
-      });
+
+      if (this.mode === 'coop') {
+        sendMessage('deselect-piece', {
+          pieceId: this.selectedPiece.dataset.id,
+          sessionId: this.sessionId
+        });
+      }
       this.selectedPiece = null;
     }
   }
@@ -403,6 +404,9 @@ class PuzzleBoard {
     }
 
     this.deselectPiece();
+    
+    // Check for puzzle completion after each move
+    this.checkPuzzleCompletion();
   }
 
   async checkCooldown() {
@@ -551,6 +555,105 @@ class PuzzleBoard {
       this.highlightPiece(piece, true, color);
     }
   }
-}
 
-export default PuzzleBoard;
+  /**
+   * Check if the puzzle is completed correctly
+   */
+  checkPuzzleCompletion() {
+    if (this.isCompleted) return;
+
+    const boardPieces = Array.from(this.boardElement.children);
+    let allPiecesPlaced = true;
+    let allPiecesCorrect = true;
+
+    boardPieces.forEach((cell) => {
+      const pieceId = cell.dataset.id;
+      const position = Number(cell.dataset.from.split('-')[1]) - 1;
+      
+      if (!pieceId || !cell.style.backgroundImage) {
+        allPiecesPlaced = false;
+        return;
+      }
+      
+      const piece = this.pieces.find(p => p.id === pieceId);
+      if (!piece || piece.correct_position !== position) {
+        allPiecesCorrect = false;
+        console.log(`Piece Position: ${position}, Correct Position: ${piece.correct_position}`);
+      }
+    });
+
+    if (allPiecesPlaced && allPiecesCorrect) {
+      this.handlePuzzleCompletion();
+    }
+  }
+
+  /**
+   * Handle puzzle completion
+   */
+  handlePuzzleCompletion() {
+    if (this.isCompleted) return;
+    
+    this.isCompleted = true;
+    this.stopTimer();
+
+    const completionTime = Date.now() - this.startTime;
+    const minutes = Math.floor(completionTime / 60000);
+    const seconds = Math.floor((completionTime % 60000) / 1000);
+    const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    this.boardElement.classList.add('completed');
+    
+    if (this.mode === 'solo') {
+      // Show completion dialog
+      const dialog = document.getElementById('completion-dialog');
+      const timeSpan = document.getElementById('completion-time');
+      timeSpan.textContent = timeString;
+      dialog.style.display = 'block';
+
+      // Handle dialog buttons
+      const postButton = dialog.querySelector('.post-button');
+      const closeButton = dialog.querySelector('.close-button');
+
+      postButton.onclick = () => {
+        sendMessage('post-completion', {
+          completionTime: timeString,
+          username: this.username
+        });
+        dialog.style.display = 'none';
+      };
+
+      closeButton.onclick = () => {
+        dialog.style.display = 'none';
+      };
+    } else {
+      sendMessage('puzzle-completed', {
+        sessionId: this.sessionId,
+        completionTime: timeString,
+        username: this.username
+      });
+    }
+
+    this.disablePieceMovement();
+  }
+
+  /**
+   * Disable piece movement after completion
+   */
+  disablePieceMovement() {
+    const cellClickHandler = (e) => this.handleCellClick(e);
+    const pieceClickHandler = (e) => this.handlePieceClick(e);
+
+    this.boardElement.querySelectorAll('.puzzle-piece').forEach(cell => {
+      cell.style.cursor = 'default';
+      cell.removeEventListener('click', cellClickHandler);
+    });
+
+    this.trayElement.querySelectorAll('.tray-piece').forEach(piece => {
+      piece.style.cursor = 'default';
+      piece.removeEventListener('click', pieceClickHandler);
+    });
+
+    // Clear any selected piece
+    this.deselectPiece();
+  }
+}
