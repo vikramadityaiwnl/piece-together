@@ -17,7 +17,7 @@ type InitialData = {
     assets: Assets;
     image: PuzzlePieceImage;  // Changed from object to single image
     cooldown?: number;
-    time?: string; 
+    startedAt?: number; // Moved from PuzzlePieceImage to InitialData
     sessionId: string;
     auditLog: any[];
     onlinePlayers: { username: string, color: string, avatar: string }[];
@@ -140,7 +140,6 @@ type PuzzlePieceImage = {
   subreddit: string;
   hint: string;
   pieces: { filepath: string; correct_position: number; id: string }[];
-  startedAt?: number;
 }
 
 type GameState = {
@@ -175,23 +174,16 @@ const getAssets = (context: Devvit.Context): Assets => ({
 
 const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage> => {
   const cacheKey = `puzzle:${context.postId}:image`;
-  const timeKey = `puzzle:${context.postId}:time`;
   
-  // Check for existing image and time
-  const [cachedImage, cachedTime] = await Promise.all([
-    context.redis.get(cacheKey),
-    context.redis.get(timeKey)
-  ]);
+  // Check for existing image
+  const cachedImage = await context.redis.get(cacheKey);
 
-  // If we have both image and time, return the cached image
-  if (cachedImage && cachedTime) {
-    const parsedImage = JSON.parse(cachedImage) as PuzzlePieceImage;
-    parsedImage.startedAt = parseInt(cachedTime);
-    return parsedImage;
+  // If we have image, return it
+  if (cachedImage) {
+    return JSON.parse(cachedImage) as PuzzlePieceImage;
   }
 
   // Create new puzzle image
-  const now = Date.now();
   const randomIndex = Math.floor(Math.random() * images.length);
   const image = images[randomIndex];
   const piecesUrl = image.pieces.map((piece) => (
@@ -206,22 +198,12 @@ const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage
       filepath: piecesUrl[index],
       correct_position: piece.correct_position,
       id: piece.id,
-    })),
-    startedAt: now
+    }))
   }
 
-  // Cache image and time
-  const expiration = new Date(now + 60 * 60 * 1000);
-  await Promise.all([
-    context.redis.set(cacheKey, 
-      JSON.stringify(puzzleImage), 
-      { expiration }
-    ),
-    context.redis.set(timeKey,
-      now.toString(),
-      { expiration }
-    )
-  ]);
+  // Cache image with 1 hour expiration
+  const expiration = new Date(Date.now() + 60 * 60 * 1000);
+  await context.redis.set(cacheKey, JSON.stringify(puzzleImage), { expiration });
 
   return puzzleImage;
 }
@@ -229,16 +211,15 @@ const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage
 /**
  * Clear all cached data for a specific puzzle.
  * @param {Devvit.Context} context - The Devvit context.
- * @param {string} postId - The post ID.
  */
-const clearCache = async (context: Devvit.Context, postId: string) => {
+const clearCache = async (context: Devvit.Context) => {
   const keysToDelete = [
-    `puzzle:${postId}:image:coop`,
-    `puzzle:${postId}:time`,
-    `puzzle:${postId}:gameState`,
-    `puzzle:${postId}:audit`,
-    `puzzle:${postId}:onlinePlayers`,
-    `puzzle:${postId}:hint`
+    `puzzle:${context.postId}:image`,
+    `puzzle:${context.postId}:time`,
+    `puzzle:${context.postId}:gameState`,
+    `puzzle:${context.postId}:audit`,
+    `puzzle:${context.postId}:onlinePlayers`,
+    `puzzle:${context.postId}:hint`
   ];
 
   await Promise.all(keysToDelete.map(key => context.redis.del(key)));
@@ -247,15 +228,18 @@ const clearCache = async (context: Devvit.Context, postId: string) => {
 /**
  * Check if cache is expired and needs clearing.
  * @param {Devvit.Context} context - The Devvit context.
- * @param {string} postId - The post ID.
- * @returns {Promise<boolean>} True if cache was cleared, false otherwise.
+ * @returns {Promise<{startedAt: number | null, expired: boolean}>}
  */
-const checkAndClearExpiredCache = async (context: Devvit.Context, postId: string): Promise<boolean> => {
-  const timeKey = `puzzle:${postId}:time`;
+const checkCacheExpiration = async (context: Devvit.Context) => {
+  const timeKey = `puzzle:${context.postId}:time`;
   const startTime = await context.redis.get(timeKey);
   
   if (!startTime) {
-    return false;
+    const now = Date.now();
+    await context.redis.set(timeKey, now.toString(), {
+      expiration: new Date(now + 60 * 60 * 1000)
+    });
+    return { startedAt: now, expired: false };
   }
 
   const startTimeMs = parseInt(startTime);
@@ -264,11 +248,17 @@ const checkAndClearExpiredCache = async (context: Devvit.Context, postId: string
   const oneHour = 60 * 60 * 1000;
 
   if (elapsed >= oneHour) {
-    await clearCache(context, postId);
-    return true;
+    console.log(`Cache expired. Clearing cache and setting new start time.`);
+    await clearCache(context);
+    const newStartTime = Date.now();
+    await context.redis.set(timeKey, newStartTime.toString(), {
+      expiration: new Date(newStartTime + oneHour)
+    });
+    return { startedAt: newStartTime, expired: true };
   }
 
-  return false;
+  console.log(`Cache is still valid. Start time: ${startTimeMs}`);
+  return { startedAt: startTimeMs, expired: false };
 };
 
 Devvit.configure({
@@ -283,28 +273,25 @@ Devvit.addCustomPostType({
   render: (context) => {
     const [webviewVisible, setWebviewVisible] = useState(false);
     const [hasClicked, setHasClicked] = useState(false);
-    const [sessionId, setSessionId] = useState(Math.random().toString(36).substring(2, 9));
+    const [sessionId, _] = useState(Math.random().toString(36).substring(2, 9));
 
     const [onlinePlayers, setOnlinePlayers] = useState<{ username: string, color: string, avatar: string }[]>([]);
 
     const initialData = useAsync<InitialData>(async () => {
-      const cacheCleared = await checkAndClearExpiredCache(context, context.postId || 'default');
+      const { startedAt, expired } = await checkCacheExpiration(context);
       
       const currUser = await context.reddit.getCurrentUser();
       
       const image = await getPuzzleImage(context);
 
-      const [gameState, auditLog, time, cooldown, onlinePlayersData] = cacheCleared ? 
-        [null, null, null, null, null] : 
+      const [auditLog, cooldown, onlinePlayersData] = expired ? 
+        [null, null, null, null] : 
         await Promise.all([
-          context.redis.get(`puzzle:${context.postId}:gameState`),
           context.redis.get(`puzzle:${context.postId}:audit`),
-          context.redis.get(`puzzle:${context.postId}:time`),
           context.redis.get(`puzzle:${context.postId}:${currUser?.username}:cooldown`),
           context.redis.get(`puzzle:${context.postId}:onlinePlayers`)
         ]);
 
-      const parsedState = gameState ? JSON.parse(gameState) : { board: [], tray: [] };
       const parsedOnlinePlayers = onlinePlayersData ? JSON.parse(onlinePlayersData) : [];
 
       return {
@@ -313,13 +300,12 @@ Devvit.addCustomPostType({
           username: currUser?.username || 'Unknown',
           avatar: await currUser?.getSnoovatarUrl() || '',
           assets: getAssets(context),
-          image,  // Just pass the single image
-          time: time || Date.now().toString(),
-          gameState: parsedState,
+          image, 
+          startedAt,
           cooldown: cooldown ? parseInt(cooldown) : undefined,
           sessionId,
           auditLog: auditLog ? JSON.parse(auditLog) : [],
-          onlinePlayers: parsedOnlinePlayers, // Include online players
+          onlinePlayers: parsedOnlinePlayers,
         },
       };
     });

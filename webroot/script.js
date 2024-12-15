@@ -324,9 +324,8 @@ class App {
   /**
    * Start the game with the given mode.
    * @param {'solo' | 'coop'} mode - The game mode.
-   * @param {string} selectedSubreddit - The selected subreddit.
    */
-  startGame(mode, selectedSubreddit = null) {
+  startGame(mode) {
     if (mode === 'coop') {
       sendMessage('start-coop');
     }
@@ -365,7 +364,7 @@ class App {
    * @param {Object} data.assets - The assets data.
    */
   handleInitialData(data) {
-    const { assets, username } = data;
+    const { assets, username, startedAt } = data;
 
     if (this.soloButton) this.soloButton.setAttribute('src', assets.solo);
     if (this.coopButton) this.coopButton.setAttribute('src', assets.coop);
@@ -381,6 +380,11 @@ class App {
     this.initialData = data; // Ensure initialData is set
     this.sessionId = data.sessionId;  // Add this line
     this.setupSoundToggleButton(assets);
+
+    // Store startedAt time
+    if (startedAt) {
+      this.startedAt = startedAt;
+    }
 
     this.toastManager.showWelcomeToast(username);
   }
@@ -438,7 +442,7 @@ class App {
       gameState,
       this.initialData.username,
       this.initialData.cooldown,
-      mode === 'coop' ? image.startedAt : null,
+      mode === 'coop' ? this.startedAt : null, // Use startedAt from initialData
       playerColor // Pass the player color
     );
   }
