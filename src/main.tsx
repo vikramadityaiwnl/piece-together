@@ -21,6 +21,7 @@ type InitialData = {
     sessionId: string;
     auditLog: any[];
     onlinePlayers: { username: string, color: string, avatar: string }[];
+    gameState: GameState | null; // Add gameState to InitialData
   };
 };
 
@@ -292,12 +293,13 @@ Devvit.addCustomPostType({
       
       const image = await getPuzzleImage(context);
 
-      const [auditLog, cooldown, onlinePlayersData] = expired ? 
+      const [auditLog, cooldown, onlinePlayersData, gameState] = expired ? 
         [null, null, null, null] : 
         await Promise.all([
           context.redis.get(`puzzle:${context.postId}:audit`),
           context.redis.get(`puzzle:${context.postId}:${currUser?.username}:cooldown`),
-          context.redis.get(`puzzle:${context.postId}:onlinePlayers`)
+          context.redis.get(`puzzle:${context.postId}:onlinePlayers`),
+          context.redis.get(`puzzle:${context.postId}:gameState`)
         ]);
 
       const parsedOnlinePlayers = onlinePlayersData ? JSON.parse(onlinePlayersData) : [];
@@ -314,6 +316,7 @@ Devvit.addCustomPostType({
           sessionId,
           auditLog: auditLog ? JSON.parse(auditLog) : [],
           onlinePlayers: parsedOnlinePlayers,
+          gameState: gameState ? JSON.parse(gameState) : null, // Add gameState to initial data
         },
       };
     });

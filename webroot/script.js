@@ -352,14 +352,9 @@ class App {
     this.puzzleTitle.textContent = `r/${image.subreddit}`
     
     this.gameManager = new GameManager(mode, this.sessionId);
-
-    // Request latest state from Redis for coop mode
-    if (mode === 'coop') {
-      sendMessage('get-game-state');
-      sendMessage('get-cooldown');
-    }
     
-    this.initializePuzzleBoard(mode, null, image);
+    // Initialize puzzle board with game state only if mode is coop
+    this.initializePuzzleBoard(mode, mode === 'coop' ? this.initialData.gameState : null, image);
 
     if (mode === 'coop') {
       if (this.initialData.auditLog) this.updateAuditPanel(this.initialData.auditLog);
@@ -373,7 +368,7 @@ class App {
    * @param {Object} data.assets - The assets data.
    */
   handleInitialData(data) {
-    const { assets, username, startedAt } = data;
+    const { assets, username, startedAt, gameState } = data;
 
     if (this.soloButton) this.soloButton.setAttribute('src', assets.solo);
     if (this.coopButton) this.coopButton.setAttribute('src', assets.coop);

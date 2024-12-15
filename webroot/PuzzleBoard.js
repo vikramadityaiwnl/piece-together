@@ -49,9 +49,8 @@ export default class PuzzleBoard {
     this.initializeModeElements(mode);
 
     // Initialize board and tray
-    const isNewGame = !gameState || (gameState.board.length === 0 && gameState.tray.length === 0);
-    this.initBoard(isNewGame ? null : gameState.board);
-    this.initTray(isNewGame ? null : gameState.tray);
+    this.initBoard(gameState ? gameState.board : null);
+    this.initTray(gameState ? gameState.tray : null);
 
     // Update state if we have it
     if (gameState) {
