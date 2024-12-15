@@ -849,3 +849,46 @@ body {
   user-select: none; /* Make unselectable */
   pointer-events: none; /* Make unhighlightable */
 }
+
+/* Hint Dialog Styles */
+.hint-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--surface-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  padding: 1rem;
+  z-index: 1000;
+  max-width: 90%;
+  width: 300px;
+  text-align: center;
+}
+
+.hint-dialog h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  color: var(--primary-color);
+}
+
+.hint-dialog p {
+  font-size: 1rem;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+}
+
+.hint-dialog button {
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.hint-dialog button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}

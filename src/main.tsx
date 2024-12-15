@@ -69,6 +69,16 @@ type GetCooldown = {
   type: 'get-cooldown';
 }
 
+type GetHint = {
+  type: 'get-hint';
+  username: string;
+}
+
+type ShowHint = {
+  type: 'show-hint';
+  message: string;
+}
+
 // Add new type for audit log messages
 type AddAudit = {
   type: 'add-audit';
@@ -116,7 +126,7 @@ type DeselectPiece = {
 };
 
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint;
 type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece;
 
 type PuzzlePieceImage = {
@@ -410,6 +420,45 @@ Devvit.addCustomPostType({
                 }
               });
             }
+          }
+          break;
+
+        case 'get-hint':
+          const hintCache = await context.redis.get(`puzzle:${context.postId}:hint`);
+          const hintUsers = hintCache ? JSON.parse(hintCache) : [];
+
+          if (hintUsers.length >= 10) {
+            context.ui.webView.postMessage('myWebView', {
+              data: {
+                type: 'show-hint',
+                message: initialData.data?.data.image.coop.hint || 'No hint available'
+              }
+            });
+            return;
+          }
+
+          const username = msg.username;
+          if (!hintUsers.includes(username)) {
+            context.redis.set(`puzzle:${context.postId}:hint`, JSON.stringify([...hintUsers, username]));
+
+            if (hintUsers.length + 1 >= 10) {
+              context.ui.webView.postMessage('myWebView', {
+                data: {
+                  type: 'show-hint',
+                  message: initialData.data?.data.image.coop.hint || 'No hint available'
+                }
+              });
+              return;
+            }
+          }
+
+          if (hintUsers.length < 10) {
+            context.ui.webView.postMessage('myWebView', {
+              data: {
+                type: 'show-toast',
+                message: `More ${10 - hintUsers.length} users needed for hint!`
+              }
+            });
           }
           break;
 

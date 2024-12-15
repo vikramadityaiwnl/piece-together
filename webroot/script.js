@@ -13,6 +13,7 @@ class App {
     this.reactionPanel = document.querySelector('.reaction-panel');
     this.initializeReactions();
     this.lastEmojiTime = 0; // Add this property to track the last emoji send time
+    this.hintDialog = null; // Add this property to store the hint dialog element
   }
 
   /**
@@ -102,6 +103,13 @@ class App {
         sendMessage('leave-coop');
       });
     }
+
+    // Add event listener for hint button
+    if (this.hintButton) {
+      this.hintButton.addEventListener('click', () => {
+        sendMessage('get-hint', { username: this.initialData.username });
+      });
+    }
   }
 
   /**
@@ -164,6 +172,11 @@ class App {
       if (this.puzzleBoard) {
         this.puzzleBoard.handleDeselect(message.data.pieceId);
       }
+    }
+
+    // Handle show-hint message
+    if (message.data.type === 'show-hint') {
+      this.showHintDialog(message.data.message);
     }
   }
 
@@ -497,6 +510,31 @@ class App {
 
     // Send emoji to realtime
     sendMessage('send-emoji', { emoji, username: this.initialData.username, sessionId: this.sessionId });
+  }
+
+  /**
+   * Show the hint dialog with the provided hint message.
+   * @param {string} hint - The hint message to display.
+   */
+  showHintDialog(hint) {
+    if (this.hintDialog) {
+      this.hintDialog.remove();
+    }
+
+    this.hintDialog = document.createElement('div');
+    this.hintDialog.className = 'hint-dialog';
+    this.hintDialog.innerHTML = `
+      <h2>Hint</h2>
+      <p>${hint}</p>
+      <button>Close</button>
+    `;
+
+    document.body.appendChild(this.hintDialog);
+
+    this.hintDialog.querySelector('button').addEventListener('click', () => {
+      this.hintDialog.remove();
+      this.hintDialog = null;
+    });
   }
 }
 
