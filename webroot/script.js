@@ -14,6 +14,7 @@ class App {
     this.initializeReactions();
     this.lastEmojiTime = 0; // Add this property to track the last emoji send time
     this.hintDialog = null; // Add this property to store the hint dialog element
+    this.imageData = null; // Add this to store image data
   }
 
   /**
@@ -52,7 +53,9 @@ class App {
   setupEventListeners() {
     window.addEventListener('message', (ev) => this.handleMessage(ev));
 
-    this.soloButton.addEventListener('click', () => this.startGame('solo'));
+    this.soloButton.addEventListener('click', () => {
+      sendMessage('start-solo');
+    });
     this.coopButton.addEventListener('click', () => this.startGame('coop'));
 
     // Update panel toggle handlers
@@ -177,6 +180,16 @@ class App {
     // Handle show-hint message
     if (message.data.type === 'show-hint') {
       this.showHintDialog(message.data.message);
+    }
+
+    // Add new case for handling image data
+    if (message.data.type === 'send-image-data') {
+      this.imageData = message.data.imageData;
+      this.showSubredditDialog().then(selectedSubreddit => {
+        if (selectedSubreddit) {
+          this.initializeGame('solo', selectedSubreddit);
+        }
+      });
     }
   }
 
@@ -311,24 +324,20 @@ class App {
   /**
    * Start the game with the given mode.
    * @param {'solo' | 'coop'} mode - The game mode.
-   * 
+   * @param {string} selectedSubreddit - The selected subreddit.
    */
-  startGame(mode) {
+  startGame(mode, selectedSubreddit = null) {
     if (mode === 'coop') {
       sendMessage('start-coop');
-    } else {
-      sendMessage('start-solo');
     }
 
     this.mainMenuScreen.style.display = 'none';
     this.gameScreen.style.display = 'block';
     
-    // Convert 'co-op' to 'coop' for consistency
-    const normalizedMode = mode === 'co-op' ? 'coop' : mode;
-    const image = this.initialData.image[normalizedMode];
+    const image = this.initialData.image;  // Use the single image
     
     if (!image) {
-      console.error(`No image found for mode: ${normalizedMode}`);
+      console.error('No image found');
       return;
     }
     
@@ -535,6 +544,68 @@ class App {
       this.hintDialog.remove();
       this.hintDialog = null;
     });
+  }
+
+  /**
+   * Show subreddit selection dialog.
+   * @returns {Promise<string>} Selected subreddit name
+   */
+  showSubredditDialog() {
+    const dialog = document.createElement('div');
+    dialog.className = 'subreddit-dialog';
+
+    return new Promise((resolve) => {
+      const subreddits = [...new Set(this.imageData.map(image => image.subreddit))];
+      
+      dialog.innerHTML = `
+        <div class="subreddit-dialog-content">
+          <h2>Select Subreddit</h2>
+          <div class="subreddit-list">
+            ${subreddits.map(subreddit => `
+              <button class="subreddit-button" data-subreddit="${subreddit}">
+                r/${subreddit}
+              </button>
+            `).join('')}
+          </div>
+          <button class="dialog-close">Close</button>
+        </div>
+      `;
+
+      document.body.appendChild(dialog);
+
+      // Add click handlers
+      dialog.querySelectorAll('.subreddit-button').forEach(button => {
+        button.addEventListener('click', () => {
+          const subreddit = button.dataset.subreddit;
+          resolve(subreddit);
+          dialog.remove();
+        });
+      });
+
+      dialog.querySelector('.dialog-close').addEventListener('click', () => {
+        resolve(null);
+        dialog.remove();
+      });
+    });
+  }
+
+  /**
+   * Initialize the game with selected settings
+   * @param {string} mode - Game mode
+   * @param {string} [selectedSubreddit] - Selected subreddit for solo mode
+   */
+  initializeGame(mode, selectedSubreddit = null) {
+    if (selectedSubreddit) {
+      const subredditImages = this.imageData.filter(img => img.subreddit === selectedSubreddit);
+      if (subredditImages.length > 0) {
+        const randomImage = subredditImages[Math.floor(Math.random() * subredditImages.length)];
+        this.initialData.image = randomImage;
+        this.startGame('solo');
+        return;
+      }
+    }
+
+    this.startGame(mode);
   }
 }
 

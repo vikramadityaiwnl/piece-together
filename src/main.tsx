@@ -15,10 +15,7 @@ type InitialData = {
     username: string;
     avatar: string;
     assets: Assets;
-    image: {
-      solo: PuzzlePieceImage;
-      coop: PuzzlePieceImage;
-    };
+    image: PuzzlePieceImage;  // Changed from object to single image
     cooldown?: number;
     time?: string; 
     sessionId: string;
@@ -123,8 +120,19 @@ type DeselectPiece = {
   sessionId: string;
 };
 
+type SendImageData = {
+  type: 'send-image-data';
+  imageData: typeof images;
+}
+
+// Add new message type
+type GetImageUrls = {
+  type: 'get-image-urls';
+  pieces: { filepath: string }[];
+}
+
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls;
 type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece;
 
 type PuzzlePieceImage = {
@@ -165,41 +173,26 @@ const getAssets = (context: Devvit.Context): Assets => ({
   dummyProfile: context.assets.getURL('game/dummy_profile.png'),
 });
 
-const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<PuzzlePieceImage> => {
-  if (mode === 'coop') {
-    const cacheKey = `puzzle:${context.postId}:image:coop`;
-    const timeKey = `puzzle:${context.postId}:time`;
-    
-    // Check for existing image and time
-    const [cachedImage, cachedTime] = await Promise.all([
-      context.redis.get(cacheKey),
-      context.redis.get(timeKey)
-    ]);
+const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage> => {
+  const cacheKey = `puzzle:${context.postId}:image`;
+  const timeKey = `puzzle:${context.postId}:time`;
+  
+  // Check for existing image and time
+  const [cachedImage, cachedTime] = await Promise.all([
+    context.redis.get(cacheKey),
+    context.redis.get(timeKey)
+  ]);
 
-    // If we have both image and time, return the cached image
-    if (cachedImage && cachedTime) {
-      const parsedImage = JSON.parse(cachedImage) as PuzzlePieceImage;
-      parsedImage.startedAt = parseInt(cachedTime);
-      return parsedImage;
-    }
+  // If we have both image and time, return the cached image
+  if (cachedImage && cachedTime) {
+    const parsedImage = JSON.parse(cachedImage) as PuzzlePieceImage;
+    parsedImage.startedAt = parseInt(cachedTime);
+    return parsedImage;
   }
 
   // Create new puzzle image
   const now = Date.now();
-  let randomIndex = Math.floor(Math.random() * images.length);
-  
-  // For solo mode or new co-op game, get a random image
-  if (mode === 'solo') {
-    const coopImageData = await context.redis.get(`puzzle:${context.postId}:image:coop`);
-    if (coopImageData) {
-      const coopImage = JSON.parse(coopImageData);
-      // Keep generating new random index until we get a different image
-      while (images[randomIndex].folder === coopImage.folder) {
-        randomIndex = Math.floor(Math.random() * images.length);
-      }
-    }
-  }
-
+  const randomIndex = Math.floor(Math.random() * images.length);
   const image = images[randomIndex];
   const piecesUrl = image.pieces.map((piece) => (
     context.assets.getURL(piece.filepath)
@@ -214,25 +207,21 @@ const getPuzzleImage = async (context: Devvit.Context, mode: string): Promise<Pu
       correct_position: piece.correct_position,
       id: piece.id,
     })),
-    startedAt: mode === 'coop' ? now : undefined
+    startedAt: now
   }
 
-  // Cache co-op image and time
-  if (mode === 'coop') {
-    const now = Date.now();
-    const expiration = new Date(now + 60 * 60 * 1000);
-    await Promise.all([
-      context.redis.set(`puzzle:${context.postId}:image:coop`, 
-        JSON.stringify(puzzleImage), 
-        { expiration }
-      ),
-      // Fix: Store current timestamp instead of future timestamp
-      context.redis.set(`puzzle:${context.postId}:time`,
-        now.toString(),
-        { expiration }
-      )
-    ]);
-  }
+  // Cache image and time
+  const expiration = new Date(now + 60 * 60 * 1000);
+  await Promise.all([
+    context.redis.set(cacheKey, 
+      JSON.stringify(puzzleImage), 
+      { expiration }
+    ),
+    context.redis.set(timeKey,
+      now.toString(),
+      { expiration }
+    )
+  ]);
 
   return puzzleImage;
 }
@@ -303,10 +292,7 @@ Devvit.addCustomPostType({
       
       const currUser = await context.reddit.getCurrentUser();
       
-      const [coopImage, soloImage] = await Promise.all([
-        getPuzzleImage(context, 'coop'),
-        getPuzzleImage(context, 'solo')
-      ]);
+      const image = await getPuzzleImage(context);
 
       const [gameState, auditLog, time, cooldown, onlinePlayersData] = cacheCleared ? 
         [null, null, null, null, null] : 
@@ -327,10 +313,7 @@ Devvit.addCustomPostType({
           username: currUser?.username || 'Unknown',
           avatar: await currUser?.getSnoovatarUrl() || '',
           assets: getAssets(context),
-          image: {
-            coop: coopImage,
-            solo: soloImage
-          },
+          image,  // Just pass the single image
           time: time || Date.now().toString(),
           gameState: parsedState,
           cooldown: cooldown ? parseInt(cooldown) : undefined,
@@ -474,7 +457,7 @@ Devvit.addCustomPostType({
             context.ui.webView.postMessage('myWebView', {
               data: {
                 type: 'show-hint',
-                message: initialData.data?.data.image.coop.hint || 'No hint available'
+                message: initialData.data?.data.image.hint || 'No hint available'
               }
             });
             return;
@@ -488,7 +471,15 @@ Devvit.addCustomPostType({
               context.ui.webView.postMessage('myWebView', {
                 data: {
                   type: 'show-hint',
-                  message: initialData.data?.data.image.coop.hint || 'No hint available'
+                  message: initialData.data?.data.image.hint || 'No hint available'
+                }
+              });
+              return;
+            } else if (hintUsers.length + 1 < 10) {
+              context.ui.webView.postMessage('myWebView', {
+                data: {
+                  type: 'show-toast',
+                  message: `More ${10 - (hintUsers.length + 1)} users needed for hint!`
                 }
               });
               return;
@@ -524,6 +515,25 @@ Devvit.addCustomPostType({
 
         case 'start-solo':
           channel.unsubscribe();
+          // Send image data to webview with asset URLs already resolved
+          const imagesWithUrls = await Promise.all(
+            images.map(async (image) => ({
+              ...image,
+              pieces: await Promise.all(
+                image.pieces.map(async (piece) => ({
+                  ...piece,
+                  filepath: context.assets.getURL(piece.filepath)
+                }))
+              )
+            }))
+          );
+          
+          context.ui.webView.postMessage('myWebView', {
+            data: {
+              type: 'send-image-data',
+              imageData: imagesWithUrls
+            }
+          });
           break;
 
         // Add audit log handling
