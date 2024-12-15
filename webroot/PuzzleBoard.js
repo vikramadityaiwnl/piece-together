@@ -288,8 +288,9 @@ export default class PuzzleBoard {
     this.highlightPiece(piece);
 
     if (this.mode === 'coop') {
-      sendMessage('select-piece', {
+      sendMessage('highlight-piece', {
         pieceId: piece.dataset.id,
+        color: this.playerColor,
         sessionId: this.sessionId
       });
     }

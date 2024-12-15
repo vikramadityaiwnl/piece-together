@@ -629,6 +629,13 @@ class App {
     const piece = [...this.puzzleBoard.boardElement.children, ...this.puzzleBoard.trayElement.children]
       .find(el => el.dataset.id === pieceId);
     if (piece) {
+      if (this.puzzleBoard.selectedPiece) {
+        sendMessage('deselect-piece', {
+          pieceId: this.puzzleBoard.selectedPiece.dataset.id,
+          sessionId: this.sessionId
+        });
+      }
+      
       this.puzzleBoard.selectPiece(piece);
     }
   }
