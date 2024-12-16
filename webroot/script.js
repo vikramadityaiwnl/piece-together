@@ -110,7 +110,7 @@ class App {
     // Add event listener for hint button
     if (this.hintButton) {
       this.hintButton.addEventListener('click', () => {
-        sendMessage('get-hint', { username: this.initialData.username });
+        sendMessage('get-hint', { username: this.initialData.username, mode: this.puzzleBoard.mode });
       });
     }
 
@@ -342,7 +342,7 @@ class App {
     this.mainMenuScreen.style.display = 'none';
     this.gameScreen.style.display = 'block';
     
-    const image = this.initialData.image;  // Use the single image
+    const image = this.initialData.image;
     
     if (!image) {
       console.error('No image found');
@@ -631,9 +631,4 @@ class App {
         });
       }
       
-      this.puzzleBoard.selectPiece(piece);
-    }
-  }
-}
-
-new App();
+      this.puzzleBoard.selectPiece(piece);    }  }}new App();

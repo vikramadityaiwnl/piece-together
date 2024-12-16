@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
 
 :root {
-  --primary-color: #4f46e5;
-  --secondary-color: #818cf8;
+  --primary-color: #f8c436;
+  --secondary-color: #ffd668;
   --background-color: #f8fafc;
   --text-color: #1e293b;
-  --accent-color: #3b82f6;
+  --accent-color: #e6b22f;
   --surface-color: #ffffff;
   --border-color: #e2e8f0;
   --border-radius: 8px;  /* Reduced from 12px */
@@ -973,18 +973,19 @@ body {
 
 .puzzle-container.completed {
   animation: completion-glow 2s ease-in-out;
-  box-shadow: 0 0 20px rgba(46, 213, 115, 0.6);
+  box-shadow: 0 0 20px rgba(248, 196, 54, 0.6);
+  pointer-events: none; /* Disable interactions after completion */
 }
 
 @keyframes completion-glow {
   0% {
-    box-shadow: 0 0 5px rgba(46, 213, 115, 0.2);
+    box-shadow: 0 0 5px rgba(248, 196, 54, 0.2);
   }
   50% {
-    box-shadow: 0 0 30px rgba(46, 213, 115, 0.8);
+    box-shadow: 0 0 30px rgba(248, 196, 54, 0.8);
   }
   100% {
-    box-shadow: 0 0 20px rgba(46, 213, 115, 0.6);
+    box-shadow: 0 0 20px rgba(248, 196, 54, 0.6);
   }
 }
 

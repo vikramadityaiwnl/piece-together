@@ -29,6 +29,8 @@ export default class PuzzleBoard {
 
     // Initialize DOM elements first
     this.boardElement = document.getElementById('puzzleBoard');
+    this.boardElement.classList.remove('completed');
+
     this.trayElement = document.getElementById('piecesTray');
     this.timerElement = document.getElementById('timer');
     
@@ -145,14 +147,6 @@ export default class PuzzleBoard {
     });
   }
 
-  /**
-   * Update the player color.
-   * @param {string} color - The new color assigned to the player.
-   */
-  updatePlayerColor(color) {
-    this.playerColor = color;
-  }
-
   initBoard(boardState = null) {
     this.boardState = boardState;
     this.boardElement.innerHTML = '';
@@ -220,6 +214,8 @@ export default class PuzzleBoard {
    * @param {Event} e - The click event.
    */
   handleCellClick(e) {
+    if (this.isCompleted) return; // Add this line to prevent moves after completion
+    
     const cell = e.target;
 
     if (this.selectedPiece) {
@@ -241,6 +237,8 @@ export default class PuzzleBoard {
    * @param {Event} e - The click event.
    */
   handlePieceClick(e) {
+    if (this.isCompleted) return; // Add this line to prevent moves after completion
+    
     const piece = e.target;
     
     // Don't allow selecting empty tray slots
@@ -538,11 +536,6 @@ export default class PuzzleBoard {
     }
   }
 
-  resetState() {
-    this.boardState = null;
-    this.trayState = null;
-  }
-
   /**
    * Handle incoming highlight messages.
    * @param {string} pieceId - The ID of the piece to highlight.
@@ -563,26 +556,23 @@ export default class PuzzleBoard {
     if (this.isCompleted) return;
 
     const boardPieces = Array.from(this.boardElement.children);
-    let allPiecesPlaced = true;
-    let allPiecesCorrect = true;
+    
+    // First check if all spots are filled
+    const allFilled = boardPieces.every(cell => cell.style.backgroundImage);
+    if (!allFilled) return;
 
-    boardPieces.forEach((cell) => {
+    // Then check if all pieces are in correct positions
+    const allCorrect = boardPieces.every((cell) => {
       const pieceId = cell.dataset.id;
+      if (!pieceId) return false;
+
       const position = Number(cell.dataset.from.split('-')[1]) - 1;
-      
-      if (!pieceId || !cell.style.backgroundImage) {
-        allPiecesPlaced = false;
-        return;
-      }
-      
       const piece = this.pieces.find(p => p.id === pieceId);
-      if (!piece || piece.correct_position !== position) {
-        allPiecesCorrect = false;
-        console.log(`Piece Position: ${position}, Correct Position: ${piece.correct_position}`);
-      }
+      
+      return piece && piece.correct_position === position;
     });
 
-    if (allPiecesPlaced && allPiecesCorrect) {
+    if (allCorrect) {
       this.handlePuzzleCompletion();
     }
   }
@@ -640,20 +630,29 @@ export default class PuzzleBoard {
    * Disable piece movement after completion
    */
   disablePieceMovement() {
-    const cellClickHandler = (e) => this.handleCellClick(e);
-    const pieceClickHandler = (e) => this.handlePieceClick(e);
-
     this.boardElement.querySelectorAll('.puzzle-piece').forEach(cell => {
       cell.style.cursor = 'default';
-      cell.removeEventListener('click', cellClickHandler);
+      cell.style.pointerEvents = 'none'; // Add this line
     });
 
     this.trayElement.querySelectorAll('.tray-piece').forEach(piece => {
       piece.style.cursor = 'default';
-      piece.removeEventListener('click', pieceClickHandler);
+      piece.style.pointerEvents = 'none'; // Add this line
     });
 
     // Clear any selected piece
     this.deselectPiece();
+  }
+
+  /**
+   * Update the player's color.
+   * @param {string} color - The new color to use.
+   */
+  updatePlayerColor(color) {
+    this.playerColor = color;
+    // If there's a currently selected piece, update its highlighting
+    if (this.selectedPiece) {
+      this.highlightPiece(this.selectedPiece, true, color);
+    }
   }
 }

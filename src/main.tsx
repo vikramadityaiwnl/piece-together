@@ -70,6 +70,7 @@ type GetCooldown = {
 type GetHint = {
   type: 'get-hint';
   username: string;
+  mode: 'solo' | 'coop';
 }
 
 type ShowHint = {
@@ -451,6 +452,17 @@ Devvit.addCustomPostType({
           break;
 
         case 'get-hint':
+          if (msg.mode === 'solo') {
+            context.ui.webView.postMessage('myWebView', {
+              data: {
+                type: 'show-hint',
+                message: initialData.data?.data.image.hint || 'No hint available'
+              }
+            });
+
+            return;
+          }
+
           const hintCache = await context.redis.get(`puzzle:${context.postId}:hint`);
           const hintUsers = hintCache ? JSON.parse(hintCache) : [];
 
