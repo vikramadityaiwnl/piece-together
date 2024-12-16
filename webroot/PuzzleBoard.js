@@ -13,8 +13,11 @@ export default class PuzzleBoard {
    * @param {string} playerColor - The color assigned to the player.
    * @param {string} subreddit - The subreddit name.
    * @param {string} hint - The hint string.
+   * @param {'default' | 'custom'} [type='default'] - The puzzle type.
    */
-  constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null, playerColor, subreddit, hint) {
+  constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null, playerColor, subreddit, hint, type = 'default') {
+    // Add type property
+    this.type = type;
     this.pieces = pieces;
     this.mode = mode;
     this.sessionId = sessionId;
@@ -91,41 +94,52 @@ export default class PuzzleBoard {
    * @param {'solo' | 'coop'} mode - The game mode
    */
   initializeModeElements(mode) {
-    this.timerElement.classList.add('active');
+    // Always show timer
+    if (this.timerElement) {
+      this.timerElement.classList.add('active');
+    }
 
-    document.querySelectorAll('[data-mode="coop"]').forEach(element => {
-      if (mode === 'coop') {
-        element.classList.add('active');
-      } else {
-        element.classList.remove('active');
-      }
-    });
+    // Only handle co-op elements if they exist
+    const coopElements = document.querySelectorAll('[data-mode="coop"]');
+    if (coopElements.length > 0) {
+      coopElements.forEach(element => {
+        if (mode === 'coop') {
+          element.classList.add('active');
+        } else {
+          element.classList.remove('active');
+        }
+      });
+    }
 
-    if (mode === 'solo') {
-      document.getElementById('leaderboard-panel').style.opacity = '0';
-      document.getElementById('audit-panel').style.opacity = '0';
-      document.getElementById('leaderboard-panel').style.pointerEvents = 'none';
-      document.getElementById('audit-panel').style.pointerEvents = 'none';
-    } else {
-      document.getElementById('leaderboard-panel').style.opacity = '1';
-      document.getElementById('audit-panel').style.opacity = '1';
-      document.getElementById('leaderboard-panel').style.pointerEvents = 'auto';
-      document.getElementById('audit-panel').style.pointerEvents = 'auto';
+    // Only handle panels if they exist
+    const leaderboardPanel = document.getElementById('leaderboard-panel');
+    const auditPanel = document.getElementById('audit-panel');
+
+    if (mode === 'solo' && leaderboardPanel && auditPanel) {
+      leaderboardPanel.style.opacity = '0';
+      auditPanel.style.opacity = '0';
+      leaderboardPanel.style.pointerEvents = 'none';
+      auditPanel.style.pointerEvents = 'none';
+    } else if (leaderboardPanel && auditPanel) {
+      leaderboardPanel.style.opacity = '1';
+      auditPanel.style.opacity = '1';
+      leaderboardPanel.style.pointerEvents = 'auto';
+      auditPanel.style.pointerEvents = 'auto';
     }
   }
 
   // Add new method to reset mode-specific elements
   resetModeElements() {
-    // Reset timer
-    this.timerElement.classList.remove('active');
+    if (this.timerElement) {
+      this.timerElement.classList.remove('active');
+    }
     this.stopTimer();
     
-    // Reset all coop elements
-    document.querySelectorAll('[data-mode="coop"]').forEach(element => {
+    const coopElements = document.querySelectorAll('[data-mode="coop"]');
+    coopElements.forEach(element => {
       element.classList.remove('active');
     });
     
-    // Reset panels
     const panels = ['leaderboard-panel', 'audit-panel'];
     panels.forEach(panelId => {
       const panel = document.getElementById(panelId);
@@ -584,24 +598,43 @@ export default class PuzzleBoard {
       timeSpan.textContent = timeString;
       dialog.style.display = 'block';
 
-      const postButton = dialog.querySelector('.post-button');
-      const closeButton = dialog.querySelector('.close-button');
+      if (this.type === 'custom') {
+        const closeButton = dialog.querySelector('.close-button');
+        if (closeButton) {
+          // Send leaderboard update automatically
+          sendMessage('add-to-leaderboard', {
+            username: this.username,
+            time: completionTime,
+            sessionId: this.sessionId
+          });
 
-      postButton.onclick = () => {
-        sendMessage('upload-custom-post', {
-          username: this.username,
-          leaderboard: [],
-          pieces: this.pieces,
-          hint: this.hint,
-          completionIn: timeString,
-          subreddit: this.subreddit
-        });
-        dialog.style.display = 'none';
-      };
+          closeButton.onclick = () => {
+            dialog.style.display = 'none';
+          };
+        }
+      } else {
+        // Default puzzle behavior
+        const postButton = dialog.querySelector('.post-button');
+        const closeButton = dialog.querySelector('.close-button');
 
-      closeButton.onclick = () => {
-        dialog.style.display = 'none';
-      };
+        if (postButton && closeButton) {
+          postButton.onclick = () => {
+            sendMessage('upload-custom-post', {
+              username: this.username,
+              leaderboard: [],
+              pieces: this.pieces,
+              hint: this.hint,
+              completedIn: completionTime,
+              subreddit: this.subreddit
+            });
+            dialog.style.display = 'none';
+          };
+
+          closeButton.onclick = () => {
+            dialog.style.display = 'none';
+          };
+        }
+      }
     } else {
       sendMessage('puzzle-completed', {
         sessionId: this.sessionId,

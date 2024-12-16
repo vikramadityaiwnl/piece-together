@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8" />
+  <title>Jigsaw Puzzle</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="game-screen">
+    <div class="top-bar">
+
+      <h1 id="puzzle-title"></h1>
+
+      <div id="timer" class="timer">
+        <span class="timer-icon">⌛</span>
+        <span class="timer-text">00:00</span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="puzzle-section">
+        <div id="puzzleBoard" class="puzzle-container"></div>
+        
+        <div class="bottom-bar">
+          <div class="right-panel">
+            <button id="hintButton" class="hint-button">
+              <span class="hint-icon">💡</span>
+              <span class="hint-text">Get Hint</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="side-panel custom-side-panel" id="sidePanel">
+        <div class="panel-tabs">
+          <button class="tab active" data-tab="pieces">🧩</button>
+          <button class="tab" data-tab="leaderboard">🏆</button>
+        </div>
+
+        <div id="pieces-panel" class="panel-content active">
+          <div id="piecesTray"></div>
+        </div>
+
+        <div id="leaderboard-panel" class="panel-content">
+          <div class="sub-panel-content active" id="rankings-content">
+            <div class="rankings-list">
+              <!-- Leaderboard entries will be dynamically inserted here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add completion dialog -->
+  <div id="completion-dialog" class="completion-dialog">
+    <h2>🎉 Puzzle Completed!</h2>
+    <p>Congratulations! You solved the puzzle in <span id="completion-time"></span>!</p>
+    <div class="dialog-buttons">
+      <button class="close-button">Close</button>
+    </div>
+  </div>
+
+  <script type="module" src="./custom.js"></script>
+</body>
+
+</html>

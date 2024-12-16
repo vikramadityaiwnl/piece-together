@@ -1,5 +1,5 @@
 import './createPost.js';
-import { Devvit, useState, useAsync, useChannel } from '@devvit/public-api';
+import { Devvit, useState, useAsync, useChannel, UseAsyncResult } from '@devvit/public-api';
 import { images } from './images.data.js';
 
 const PLAYER_COLORS = [
@@ -14,7 +14,7 @@ type InitialData = {
     username: string;
     avatar: string;
     assets: Assets;
-    image: PuzzlePieceImage; 
+    image: PuzzlePieceImage;
     cooldown?: number;
     startedAt?: number;
     sessionId: string;
@@ -23,6 +23,20 @@ type InitialData = {
     gameState: GameState | null;
   };
 };
+
+type CustomInitialData = {
+  type: 'customInitialData';
+  data: {
+    username: string;
+    avatar: string;
+    assets: Assets;
+    sessionId: string;
+    leaderboard: { username: string; avatar: string, time: number }[];
+    pieces: { id: string; filepath: string, correct_position: number }[];
+    hint: string;
+    subreddit: string;
+  };
+}
 
 type AddCooldown = {
   type: 'add-cooldown';
@@ -147,8 +161,16 @@ type GetImageUrls = {
   pieces: { filepath: string }[];
 }
 
+// Add new message type
+type AddToLeaderboard = {
+  type: 'add-to-leaderboard';
+  username: string;
+  time: string;
+  sessionId: string;
+}
+
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | UploadCustomPost | PuzzleCompletion;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | UploadCustomPost | PuzzleCompletion | AddToLeaderboard;
 type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | PuzzleCompletion;
 
 type PuzzlePieceImage = {
@@ -191,7 +213,7 @@ const getAssets = (context: Devvit.Context): Assets => ({
 const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage> => {
   const cacheKey = `puzzle:${context.postId}:image`;
   const timeKey = `puzzle:${context.postId}:time`;
-  
+
   const startTime = await context.redis.get(timeKey);
   if (!startTime) {
     return {
@@ -255,7 +277,7 @@ const clearCache = async (context: Devvit.Context) => {
 const checkCacheExpiration = async (context: Devvit.Context) => {
   const timeKey = `puzzle:${context.postId}:time`;
   const startTime = await context.redis.get(timeKey);
-  
+
   if (!startTime) {
     const now = Date.now();
     await context.redis.set(timeKey, now.toString(), {
@@ -297,15 +319,38 @@ Devvit.addCustomPostType({
 
     const [onlinePlayers, setOnlinePlayers] = useState<{ username: string, color: string, avatar: string }[]>([]);
 
+    const post = useAsync(async () => {
+      const type = await context.redis.get(`puzzle:${context.postId}:type`);
+
+      if (type === 'custom') {
+        return {
+          type: 'custom',
+          webview: 'custom.html'
+        }
+      }
+
+      if (type === 'memorial') {
+        return {
+          type: 'memorial',
+          webview: 'memorial.html'
+        }
+      }
+
+      return {
+        type: 'default',
+        webview: 'page.html'
+      }
+    })
+
     const initialData = useAsync<InitialData>(async () => {
       const { startedAt, expired } = await checkCacheExpiration(context);
-      
+
       const currUser = await context.reddit.getCurrentUser();
-      
+
       const image = await getPuzzleImage(context);
 
-      const [auditLog, cooldown, onlinePlayersData, gameState] = expired ? 
-        [null, null, null, null] : 
+      const [auditLog, cooldown, onlinePlayersData, gameState] = expired ?
+        [null, null, null, null] :
         await Promise.all([
           context.redis.get(`puzzle:${context.postId}:audit`),
           context.redis.get(`puzzle:${context.postId}:${currUser?.username}:cooldown`),
@@ -321,7 +366,7 @@ Devvit.addCustomPostType({
           username: currUser?.username || 'Unknown',
           avatar: await currUser?.getSnoovatarUrl() || '',
           assets: getAssets(context),
-          image, 
+          image,
           startedAt,
           cooldown: cooldown ? parseInt(cooldown) : undefined,
           sessionId,
@@ -329,6 +374,30 @@ Devvit.addCustomPostType({
           onlinePlayers: parsedOnlinePlayers,
           gameState: gameState ? JSON.parse(gameState) : null,
         },
+      };
+    });
+
+    const customInitialData = useAsync<CustomInitialData>(async () => {
+      const currUser = await context.reddit.getCurrentUser();
+      const leaderboard = await context.redis.get(`puzzle:${context.postId}:leaderboard`);
+      const pieces = await context.redis.get(`puzzle:${context.postId}:pieces`);
+      const hint = await context.redis.get(`puzzle:${context.postId}:hint`);
+      const subreddit = await context.redis.get(`puzzle:${context.postId}:subreddit`);
+      const owner = await context.redis.get(`puzzle:${context.postId}:owner`);
+
+      return {
+        type: 'customInitialData',
+        data: {
+          username: currUser?.username || 'Unknown',
+          avatar: await currUser?.getSnoovatarUrl() || '',
+          assets: getAssets(context),
+          sessionId,
+          leaderboard: leaderboard ? JSON.parse(leaderboard) : [],
+          pieces: pieces ? JSON.parse(pieces) : [],
+          hint: hint || 'No hint available',
+          subreddit: subreddit || 'default',
+          owner: owner || 'Unknown'
+        }
       };
     });
 
@@ -350,7 +419,7 @@ Devvit.addCustomPostType({
           });
           context.ui.webView.postMessage('myWebView', { data: msg });
         }
-        
+
         if (msg.sessionId === sessionId) return;
 
         if (msg.type === "puzzle-completed") {
@@ -375,7 +444,7 @@ Devvit.addCustomPostType({
 
         const usedColors = onlinePlayers.map(player => player.color);
         const availableColors = PLAYER_COLORS.filter(c => !usedColors.includes(c));
-        const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)] 
+        const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)]
           || PLAYER_COLORS[Math.floor(Math.random() * availableColors.length)];
 
         const updatedPlayers = [...onlinePlayers, { username: currUser.username, color: randomColor, avatar: await currUser.getSnoovatarUrl() || '' }];
@@ -544,7 +613,7 @@ Devvit.addCustomPostType({
               )
             }))
           );
-          
+
           context.ui.webView.postMessage('myWebView', {
             data: {
               type: 'send-image-data',
@@ -559,7 +628,7 @@ Devvit.addCustomPostType({
           const existingAudit = await context.redis.get(auditKey);
           const auditLog = existingAudit ? JSON.parse(existingAudit) : [];
           const user = await context.reddit.getCurrentUser();
-          
+
           auditLog.push({
             username: msg.username,
             avatar: await user?.getSnoovatarUrl() || '',
@@ -612,12 +681,14 @@ Devvit.addCustomPostType({
             )
           })
 
-          const avatar = (await context.reddit.getCurrentUser())?.getSnoovatarUrl() || '';
-          await context.redis.set(`puzzle:${context.postId}:leaderboard`, JSON.stringify([{ username: msg.username, avatar: avatar, time: msg.completedIn }]));
-          await context.redis.set(`puzzle:${context.postId}:pieces`, JSON.stringify(msg.pieces));
-          await context.redis.set(`puzzle:${context.postId}:hint`, msg.hint);
-          await context.redis.set(`puzzle:${context.postId}:owner`, msg.username);
-          await context.redis.set(`puzzle:${context.postId}:type`, 'custom');
+          const avatar = await (await context.reddit.getCurrentUser())?.getSnoovatarUrl() || '';
+          await context.redis.set(`puzzle:${post.id}:leaderboard`, JSON.stringify([{ username: msg.username, avatar: avatar, time: msg.completedIn }]));
+          await context.redis.set(`puzzle:${post.id}:completedIn`, String(msg.completedIn));
+          await context.redis.set(`puzzle:${post.id}:pieces`, JSON.stringify(msg.pieces));
+          await context.redis.set(`puzzle:${post.id}:hint`, msg.hint);
+          await context.redis.set(`puzzle:${post.id}:subreddit`, msg.subreddit);
+          await context.redis.set(`puzzle:${post.id}:owner`, msg.username);
+          await context.redis.set(`puzzle:${post.id}:type`, 'custom');
 
           context.ui.showToast({ text: 'Post created!' });
           context.ui.navigateTo(post);
@@ -639,6 +710,42 @@ Devvit.addCustomPostType({
           await channel.send(msg);
           break;
 
+        case 'add-to-leaderboard':
+          const leaderboardData = await context.redis.get(`puzzle:${context.postId}:leaderboard`);
+          const currentUser = await context.reddit.getCurrentUser();
+          const userAvatar = await currentUser?.getSnoovatarUrl() || '';
+
+          let leaderboard = leaderboardData ? JSON.parse(leaderboardData) : [];
+
+          const existingEntryIndex = leaderboard.findIndex((entry: any) => entry.username === msg.username);
+
+          if (existingEntryIndex !== -1) {
+            const existingEntry = leaderboard[existingEntryIndex];
+            if (msg.time < existingEntry.time) {
+              leaderboard[existingEntryIndex] = {
+                username: msg.username,
+                avatar: userAvatar,
+                time: msg.time,
+              };
+            }
+          } else {
+            leaderboard.push({
+              username: msg.username,
+              avatar: userAvatar,
+              time: msg.time,
+            });
+          }
+
+          await context.redis.set(`puzzle:${context.postId}:leaderboard`, JSON.stringify(leaderboard));
+
+          context.ui.webView.postMessage('myWebView', {
+            data: {
+              type: 'leaderboard-update',
+              leaderboard
+            }
+          });
+          break;
+
         default:
           console.info('Unknown message:', JSON.stringify(msg));
           break;
@@ -651,6 +758,17 @@ Devvit.addCustomPostType({
     const showWebView = () => {
       if (hasClicked) return;
       setHasClicked(true);
+
+      if (post.data?.type === 'custom') {
+        context.ui.webView.postMessage('myWebView', customInitialData);
+        setWebviewVisible(true);
+        return
+      }
+
+      if (post.data?.type === 'memorial') {
+
+        return
+      }
 
       if (initialData.error === null) {
         context.ui.webView.postMessage('myWebView', initialData);
@@ -682,7 +800,7 @@ Devvit.addCustomPostType({
           <vstack border="thick" borderColor="black" height={webviewVisible ? '100%' : '0%'}>
             <webview
               id="myWebView"
-              url="page.html"
+              url={post.data?.webview || 'page.html'}
               onMessage={(msg) => onMessage(msg as WebViewMessage)}
               grow
               height={webviewVisible ? '100%' : '0%'}
