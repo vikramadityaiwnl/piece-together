@@ -14,7 +14,6 @@ Devvit.addMenuItem({
     const post = await reddit.submitPost({
       title: 'Jigsaw Puzzle',
       subredditName: subreddit.name,
-      // The preview appears while the post loads
       preview: (
         <vstack height="100%" width="100%" alignment="middle center">
           <image

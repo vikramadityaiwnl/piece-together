@@ -430,7 +430,9 @@ class App {
       this.initialData.username,
       this.initialData.cooldown,
       mode === 'coop' ? this.startedAt : null,
-      playerColor
+      playerColor,
+      image.subreddit,
+      this.hint
     );
   }
 

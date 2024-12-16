@@ -93,9 +93,14 @@ type PuzzleCompletion = {
   type: 'puzzle-completed';
   sessionId: string;
 }
-type PostCompletion = {
-  type: 'post-completion';
+type UploadCustomPost = {
+  type: 'upload-custom-post';
   username: string;
+  leaderboard: { username: string; avatar: string, time: number }[];
+  pieces: { id: string; filepath: string, correct_position: number }[];
+  hint: string;
+  completedIn: number;
+  subreddit: string;
   sessionId: string;
 }
 
@@ -143,7 +148,7 @@ type GetImageUrls = {
 }
 
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | PostCompletion | PuzzleCompletion;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | UploadCustomPost | PuzzleCompletion;
 type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | PuzzleCompletion;
 
 type PuzzlePieceImage = {
@@ -581,8 +586,41 @@ Devvit.addCustomPostType({
           });
           break;
 
-        case 'post-completion':
-          // upload user completion post to Reddit
+        case 'upload-custom-post':
+          context.ui.webView.postMessage('myWebView', {
+            data: {
+              type: 'show-toast',
+              message: 'Uploading your post...'
+            }
+          });
+
+          const subreddit = await context.reddit.getCurrentSubreddit()
+          const post = await context.reddit.submitPost({
+            title: `${msg.username} challenges you to solve Jigsaw Puzzle on ${msg.subreddit} topic!`,
+            subredditName: subreddit.name,
+            preview: (
+              <vstack height="100%" width="100%" alignment="middle center">
+                <image
+                  url='game/loading_preview.gif'
+                  description='Loading Preview'
+                  height='100%'
+                  width='100%'
+                  imageHeight={100}
+                  imageWidth={100}
+                />
+              </vstack>
+            )
+          })
+
+          const avatar = (await context.reddit.getCurrentUser())?.getSnoovatarUrl() || '';
+          await context.redis.set(`puzzle:${context.postId}:leaderboard`, JSON.stringify([{ username: msg.username, avatar: avatar, time: msg.completedIn }]));
+          await context.redis.set(`puzzle:${context.postId}:pieces`, JSON.stringify(msg.pieces));
+          await context.redis.set(`puzzle:${context.postId}:hint`, msg.hint);
+          await context.redis.set(`puzzle:${context.postId}:owner`, msg.username);
+          await context.redis.set(`puzzle:${context.postId}:type`, 'custom');
+
+          context.ui.showToast({ text: 'Post created!' });
+          context.ui.navigateTo(post);
           break;
 
         case 'puzzle-completed':

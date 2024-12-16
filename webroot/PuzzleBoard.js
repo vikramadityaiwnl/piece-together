@@ -11,8 +11,10 @@ export default class PuzzleBoard {
    * @param {number} [cooldown] - Initial cooldown timestamp.
    * @param {number} [startTime] - Initial start time for countdown timer.
    * @param {string} playerColor - The color assigned to the player.
+   * @param {string} subreddit - The subreddit name.
+   * @param {string} hint - The hint string.
    */
-  constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null, playerColor) {
+  constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null, playerColor, subreddit, hint) {
     this.pieces = pieces;
     this.mode = mode;
     this.sessionId = sessionId;
@@ -20,6 +22,8 @@ export default class PuzzleBoard {
     this.cooldownDuration = 60000;
     this.initialTime = startTime ? parseInt(startTime) : null;
     this.lastMoveTime = 0;
+    this.subreddit = subreddit;
+    this.hint = hint;
     
     this.onlinePlayers = [];
     this.playerColor = playerColor; 
@@ -584,9 +588,13 @@ export default class PuzzleBoard {
       const closeButton = dialog.querySelector('.close-button');
 
       postButton.onclick = () => {
-        sendMessage('post-completion', {
-          completionTime: timeString,
-          username: this.username
+        sendMessage('upload-custom-post', {
+          username: this.username,
+          leaderboard: [],
+          pieces: this.pieces,
+          hint: this.hint,
+          completionIn: timeString,
+          subreddit: this.subreddit
         });
         dialog.style.display = 'none';
       };
