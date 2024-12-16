@@ -463,17 +463,6 @@ Devvit.addCustomPostType({
           break;
 
         case 'get-hint':
-          if (msg.mode === 'solo') {
-            context.ui.webView.postMessage('myWebView', {
-              data: {
-                type: 'show-hint',
-                message: initialData.data?.data.image.hint || 'No hint available'
-              }
-            });
-
-            return;
-          }
-
           const hintCache = await context.redis.get(`puzzle:${context.postId}:hint`);
           const hintUsers = hintCache ? JSON.parse(hintCache) : [];
 
@@ -554,7 +543,8 @@ Devvit.addCustomPostType({
           context.ui.webView.postMessage('myWebView', {
             data: {
               type: 'send-image-data',
-              imageData: imagesWithUrls
+              imageData: imagesWithUrls,
+              hint: imagesWithUrls[0].hint
             }
           });
           break;

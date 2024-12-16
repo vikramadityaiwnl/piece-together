@@ -335,6 +335,9 @@ export default class PuzzleBoard {
     const selectedImage = this.selectedPiece.style.backgroundImage;
     const targetImage = cell.style.backgroundImage;
     const pieceId = this.selectedPiece.dataset.id; 
+    
+    // Store the target cell's piece ID before swap
+    const targetPieceId = cell.dataset.id;
 
     if (targetImage && isFromTray) {
       const emptySlot = this.findEmptyTraySlot();
@@ -347,24 +350,24 @@ export default class PuzzleBoard {
       emptySlot.style.backgroundSize = 'cover';
       emptySlot.style.backgroundPosition = 'center';
       emptySlot.style.cursor = 'pointer';
-      emptySlot.dataset.id = cell.dataset.id;
+      emptySlot.dataset.id = targetPieceId; // Use stored piece ID
     }
 
     cell.style.backgroundImage = selectedImage;
-    cell.dataset.id = pieceId; 
+    cell.dataset.id = pieceId;
     
     if (isFromTray) {
       this.selectedPiece.style.backgroundImage = '';
       this.selectedPiece.style.border = '1px dashed #cbd5e1';
       this.selectedPiece.style.cursor = 'default';
-      this.selectedPiece.dataset.id = ''; 
+      this.selectedPiece.dataset.id = '';
     } else {
       if (targetImage) {
         this.selectedPiece.style.backgroundImage = targetImage;
-        this.selectedPiece.dataset.id = cell.dataset.id; 
+        this.selectedPiece.dataset.id = targetPieceId; // Use stored piece ID
       } else {
         this.selectedPiece.style.backgroundImage = '';
-        this.selectedPiece.dataset.id = ''; 
+        this.selectedPiece.dataset.id = '';
       }
     }
 
@@ -374,12 +377,13 @@ export default class PuzzleBoard {
         username: this.username,
         sessionId: this.sessionId
       });
-      this.saveGameState(cell.dataset.from, this.selectedPiece.dataset.from, pieceId); // Pass piece ID to saveGameState
+      this.saveGameState(cell.dataset.from, this.selectedPiece.dataset.from, pieceId);
     }
 
     this.deselectPiece();
     
-    this.checkPuzzleCompletion();
+    // Add a small delay before checking completion to ensure DOM is updated
+    setTimeout(() => this.checkPuzzleCompletion(), 0);
   }
 
   async checkCooldown() {
@@ -438,6 +442,13 @@ export default class PuzzleBoard {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
+  }
+
+  resetTimer() {
+    this.stopTimer();
+    this.timerStarted = false;
+    this.startTime = 0;
+    this.timerElement.querySelector('.timer-text').textContent = '00:00';
   }
 
   /**

@@ -91,7 +91,7 @@ class App {
         this.gameState = null;
         this.gameScreen.style.display = 'none';
         this.mainMenuScreen.style.display = 'block';
-        this.timer.textContent = '00:00';
+        this.puzzleBoard.resetTimer()
 
         sendMessage('leave-coop');
       });
@@ -99,7 +99,13 @@ class App {
 
     if (this.hintButton) {
       this.hintButton.addEventListener('click', () => {
-        sendMessage('get-hint', { username: this.initialData.username, mode: this.puzzleBoard.mode });
+        if (this.puzzleBoard.mode === 'solo') {
+          this.toastManager.show(this.hint, 'info');
+        }
+
+        if (this.puzzleBoard.mode === 'coop') {
+          sendMessage('get-hint', { username: this.initialData.username, mode: this.puzzleBoard.mode });
+        }
       });
     }
 
@@ -174,6 +180,7 @@ class App {
 
     if (message.data.type === 'send-image-data') {
       this.imageData = message.data.imageData;
+      this.hint = message.data.hint;
       this.showSubredditDialog().then(selectedSubreddit => {
         if (selectedSubreddit) {
           this.initializeGame('solo', selectedSubreddit);
