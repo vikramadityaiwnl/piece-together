@@ -17,7 +17,14 @@ Devvit.addMenuItem({
       // The preview appears while the post loads
       preview: (
         <vstack height="100%" width="100%" alignment="middle center">
-          <text size="large">Loading ...</text>
+          <image
+            url='game/loading_preview.gif'
+            description='Loading Preview'
+            height='100%'
+            width='100%'
+            imageHeight={100}
+            imageWidth={100}
+          />
         </vstack>
       ),
     });

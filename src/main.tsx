@@ -2,7 +2,6 @@ import './createPost.js';
 import { Devvit, useState, useAsync, useChannel } from '@devvit/public-api';
 import { images } from './images.data.js';
 
-// Add these constants at the top
 const PLAYER_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
   '#FFEEAD', '#D4A5A5', '#9B89B3', '#FF9999',
@@ -15,13 +14,13 @@ type InitialData = {
     username: string;
     avatar: string;
     assets: Assets;
-    image: PuzzlePieceImage;  // Changed from object to single image
+    image: PuzzlePieceImage; 
     cooldown?: number;
-    startedAt?: number; // Moved from PuzzlePieceImage to InitialData
+    startedAt?: number;
     sessionId: string;
     auditLog: any[];
     onlinePlayers: { username: string, color: string, avatar: string }[];
-    gameState: GameState | null; // Add gameState to InitialData
+    gameState: GameState | null;
   };
 };
 
@@ -186,16 +185,23 @@ const getAssets = (context: Devvit.Context): Assets => ({
 
 const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage> => {
   const cacheKey = `puzzle:${context.postId}:image`;
+  const timeKey = `puzzle:${context.postId}:time`;
   
-  // Check for existing image
-  const cachedImage = await context.redis.get(cacheKey);
+  const startTime = await context.redis.get(timeKey);
+  if (!startTime) {
+    return {
+      folder: '',
+      subreddit: '',
+      hint: '',
+      pieces: []
+    };
+  }
 
-  // If we have image, return it
+  const cachedImage = await context.redis.get(cacheKey);
   if (cachedImage) {
     return JSON.parse(cachedImage) as PuzzlePieceImage;
   }
 
-  // Create new puzzle image
   const randomIndex = Math.floor(Math.random() * images.length);
   const image = images[randomIndex];
   const piecesUrl = image.pieces.map((piece) => (
@@ -213,8 +219,7 @@ const getPuzzleImage = async (context: Devvit.Context): Promise<PuzzlePieceImage
     }))
   }
 
-  // Cache image with 1 hour expiration
-  const expiration = new Date(Date.now() + 60 * 60 * 1000);
+  const expiration = startTime ? new Date(parseInt(startTime) + 60 * 60 * 1000) : new Date();
   await context.redis.set(cacheKey, JSON.stringify(puzzleImage), { expiration });
 
   return puzzleImage;
@@ -283,7 +288,7 @@ Devvit.addCustomPostType({
   render: (context) => {
     const [webviewVisible, setWebviewVisible] = useState(false);
     const [hasClicked, setHasClicked] = useState(false);
-    const [sessionId, _] = useState(Math.random().toString(36).substring(2, 9));
+    const [sessionId] = useState(Math.random().toString(36).substring(2, 9));
 
     const [onlinePlayers, setOnlinePlayers] = useState<{ username: string, color: string, avatar: string }[]>([]);
 
@@ -317,7 +322,7 @@ Devvit.addCustomPostType({
           sessionId,
           auditLog: auditLog ? JSON.parse(auditLog) : [],
           onlinePlayers: parsedOnlinePlayers,
-          gameState: gameState ? JSON.parse(gameState) : null, // Add gameState to initial data
+          gameState: gameState ? JSON.parse(gameState) : null,
         },
       };
     });
@@ -363,20 +368,20 @@ Devvit.addCustomPostType({
         const currUser = await context.reddit.getCurrentUser();
         if (!currUser) return;
 
-        // Assign random color to new player
         const usedColors = onlinePlayers.map(player => player.color);
         const availableColors = PLAYER_COLORS.filter(c => !usedColors.includes(c));
         const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)] 
           || PLAYER_COLORS[Math.floor(Math.random() * availableColors.length)];
 
-        // Update players array and broadcast
         const updatedPlayers = [...onlinePlayers, { username: currUser.username, color: randomColor, avatar: await currUser.getSnoovatarUrl() || '' }];
         setOnlinePlayers(updatedPlayers);
 
-        // Save updated players list to Redis
-        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers));
+        const timeKey = `puzzle:${context.postId}:time`;
+        const startTime = await context.redis.get(timeKey);
+        const expiration = new Date(parseInt(startTime || '0') + 60 * 60 * 1000);
 
-        // Broadcast updated players list
+        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers), { expiration });
+
         await channel.send({
           type: 'online-players-update',
           players: updatedPlayers,
@@ -387,12 +392,14 @@ Devvit.addCustomPostType({
         const currUser = await context.reddit.getCurrentUser();
         if (!currUser) return;
 
-        // Remove player and broadcast
         const updatedPlayers = onlinePlayers.filter(player => player.username !== currUser.username);
         setOnlinePlayers(updatedPlayers);
 
-        // Save updated players list to Redis
-        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers));
+        const timeKey = `puzzle:${context.postId}:time`;
+        const startTime = await context.redis.get(timeKey);
+        const expiration = new Date(parseInt(startTime || '0') + 60 * 60 * 1000);
+
+        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers), { expiration });
 
         await channel.send({
           type: 'online-players-update',
@@ -407,6 +414,10 @@ Devvit.addCustomPostType({
      * @param {WebViewMessage} msg - The message from the webview.
      */
     const onMessage = async (msg: WebViewMessage) => {
+      const timeKey = `puzzle:${context.postId}:time`;
+      const startTime = await context.redis.get(timeKey);
+      const expiration = new Date(parseInt(startTime || '0') + 60 * 60 * 1000);
+
       switch (msg.type) {
         case 'add-cooldown':
           const cooldown = new Date(Date.now() + 60 * 1000);
@@ -414,7 +425,7 @@ Devvit.addCustomPostType({
           await context.redis.set(key, cooldown.getTime().toString(), {
             expiration: cooldown,
           });
-          // Broadcast cooldown update
+
           context.ui.webView.postMessage('myWebView', {
             data: {
               type: 'cooldown-update',
@@ -478,7 +489,7 @@ Devvit.addCustomPostType({
 
           const username = msg.username;
           if (!hintUsers.includes(username)) {
-            context.redis.set(`puzzle:${context.postId}:hint`, JSON.stringify([...hintUsers, username]));
+            context.redis.set(`puzzle:${context.postId}:hint`, JSON.stringify([...hintUsers, username]), { expiration });
 
             if (hintUsers.length + 1 >= 10) {
               context.ui.webView.postMessage('myWebView', {
@@ -511,7 +522,7 @@ Devvit.addCustomPostType({
 
         case 'update-game-state':
           await channel.send(msg)
-          context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState));
+          context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState), { expiration });
           break;
 
         case 'show-toast':
@@ -528,7 +539,6 @@ Devvit.addCustomPostType({
 
         case 'start-solo':
           channel.unsubscribe();
-          // Send image data to webview with asset URLs already resolved
           const imagesWithUrls = await Promise.all(
             images.map(async (image) => ({
               ...image,
@@ -549,29 +559,24 @@ Devvit.addCustomPostType({
           });
           break;
 
-        // Add audit log handling
         case 'add-audit':
           const auditKey = `puzzle:${context.postId}:audit`;
           const existingAudit = await context.redis.get(auditKey);
           const auditLog = existingAudit ? JSON.parse(existingAudit) : [];
           const user = await context.reddit.getCurrentUser();
           
-          // Add new entry to audit log
           auditLog.push({
             username: msg.username,
             avatar: await user?.getSnoovatarUrl() || '',
             action: msg.action
           });
 
-          // Keep only last 100 moves
           if (auditLog.length > 100) {
             auditLog.shift();
           }
 
-          // Save audit log
-          await context.redis.set(auditKey, JSON.stringify(auditLog));
+          await context.redis.set(auditKey, JSON.stringify(auditLog), { expiration });
 
-          // Broadcast audit update to all clients
           context.ui.webView.postMessage('myWebView', {
             data: {
               type: 'audit-update',
@@ -579,7 +584,6 @@ Devvit.addCustomPostType({
             }
           });
 
-          // Also send through realtime channel
           await channel.send({
             type: 'audit-update',
             auditLog,

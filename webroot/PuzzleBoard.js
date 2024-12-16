@@ -13,7 +13,6 @@ export default class PuzzleBoard {
    * @param {string} playerColor - The color assigned to the player.
    */
   constructor(pieces, mode, sessionId, gameState = null, username, cooldown, startTime = null, playerColor) {
-    // Initialize properties
     this.pieces = pieces;
     this.mode = mode;
     this.sessionId = sessionId;
@@ -22,24 +21,20 @@ export default class PuzzleBoard {
     this.initialTime = startTime ? parseInt(startTime) : null;
     this.lastMoveTime = 0;
     
-    // Add these new properties
     this.onlinePlayers = [];
-    this.playerColor = playerColor; // Store the player color
-    this.isCompleted = false; // Add completed flag
+    this.playerColor = playerColor; 
+    this.isCompleted = false; 
 
-    // Initialize DOM elements first
     this.boardElement = document.getElementById('puzzleBoard');
     this.boardElement.classList.remove('completed');
 
     this.trayElement = document.getElementById('piecesTray');
     this.timerElement = document.getElementById('timer');
     
-    // Validate required DOM elements
     if (!this.boardElement || !this.trayElement || !this.timerElement) {
       throw new Error('Required DOM elements not found');
     }
 
-    // Initialize state
     this.selectedPiece = null;
     this.boardState = null;
     this.trayState = null;
@@ -47,19 +42,15 @@ export default class PuzzleBoard {
     this.startTime = 0;
     this.timerInterval = null;
 
-    // Show/hide mode-specific elements
     this.initializeModeElements(mode);
 
-    // Initialize board and tray
     this.initBoard(gameState ? gameState.board : null);
     this.initTray(gameState ? gameState.tray : null);
 
-    // Update state if we have it
     if (gameState) {
       this.updateState(gameState);
     }
 
-    // Update cooldown if we have it
     if (cooldown) {
       this.updateCooldown(cooldown);
     }
@@ -68,14 +59,12 @@ export default class PuzzleBoard {
       this.timerElement.classList.add('active');
     }
     
-    // Start timer automatically for co-op mode
     if (mode === 'coop' && this.initialTime) {
       this.startTimer();
     }
 
     this.setupEventListeners();
 
-    // Initialize online players panel
     this.onlinePlayersButton = document.getElementById('online-players-button');
     this.onlinePlayersPanel = document.getElementById('online-players-panel');
     
@@ -84,7 +73,6 @@ export default class PuzzleBoard {
         this.onlinePlayersPanel.classList.toggle('active');
       });
 
-      // Close panel when clicking outside
       document.addEventListener('click', (e) => {
         if (!this.onlinePlayersButton.contains(e.target) && 
             !this.onlinePlayersPanel.contains(e.target)) {
@@ -99,10 +87,8 @@ export default class PuzzleBoard {
    * @param {'solo' | 'coop'} mode - The game mode
    */
   initializeModeElements(mode) {
-    // Show timer for both modes
     this.timerElement.classList.add('active');
 
-    // Handle reactions and audit elements
     document.querySelectorAll('[data-mode="coop"]').forEach(element => {
       if (mode === 'coop') {
         element.classList.add('active');
@@ -111,7 +97,6 @@ export default class PuzzleBoard {
       }
     });
 
-    // Update panel visibility
     if (mode === 'solo') {
       document.getElementById('leaderboard-panel').style.opacity = '0';
       document.getElementById('audit-panel').style.opacity = '0';
@@ -163,7 +148,7 @@ export default class PuzzleBoard {
       boardState.forEach((state, index) => {
         const cell = cells[index];
         cell.style.backgroundImage = state.backgroundImage;
-        cell.dataset.id = state.pieceId; // Add piece ID data
+        cell.dataset.id = state.pieceId;
       });
     }
   }
@@ -214,7 +199,7 @@ export default class PuzzleBoard {
    * @param {Event} e - The click event.
    */
   handleCellClick(e) {
-    if (this.isCompleted) return; // Add this line to prevent moves after completion
+    if (this.isCompleted) return;
     
     const cell = e.target;
 
@@ -223,7 +208,6 @@ export default class PuzzleBoard {
         this.deselectPiece();
         return;
       }
-      // Proceed with placement only if we have a valid piece selected
       if (this.selectedPiece.style.backgroundImage) {
         this.placePieceOnBoard(cell);
       }
@@ -237,7 +221,7 @@ export default class PuzzleBoard {
    * @param {Event} e - The click event.
    */
   handlePieceClick(e) {
-    if (this.isCompleted) return; // Add this line to prevent moves after completion
+    if (this.isCompleted) return;
     
     const piece = e.target;
     
@@ -343,7 +327,6 @@ export default class PuzzleBoard {
   async placePieceOnBoard(cell) {
     if (!this.selectedPiece) return;
 
-    // Check cooldown before allowing placement
     if (this.mode === 'coop' && !(await this.checkCooldown())) {
       return;
     }
@@ -351,47 +334,40 @@ export default class PuzzleBoard {
     const isFromTray = this.selectedPiece.classList.contains('tray-piece');
     const selectedImage = this.selectedPiece.style.backgroundImage;
     const targetImage = cell.style.backgroundImage;
-    const pieceId = this.selectedPiece.dataset.id; // Keep track of the piece ID
+    const pieceId = this.selectedPiece.dataset.id; 
 
-    // If target cell has a piece and we're coming from tray, 
-    // find empty tray slot for the displaced piece
     if (targetImage && isFromTray) {
       const emptySlot = this.findEmptyTraySlot();
       if (!emptySlot) {
-        // No empty slot found, can't make the move
         this.deselectPiece();
         return;
       }
-      // Move displaced piece to tray
       emptySlot.style.backgroundImage = targetImage;
       emptySlot.style.border = '1px solid #ccc';
       emptySlot.style.backgroundSize = 'cover';
       emptySlot.style.backgroundPosition = 'center';
       emptySlot.style.cursor = 'pointer';
-      emptySlot.dataset.id = cell.dataset.id; // Add piece ID data
+      emptySlot.dataset.id = cell.dataset.id;
     }
 
-    // Place selected piece in target cell
     cell.style.backgroundImage = selectedImage;
-    cell.dataset.id = pieceId; // Add piece ID data
+    cell.dataset.id = pieceId; 
     
     if (isFromTray) {
       this.selectedPiece.style.backgroundImage = '';
       this.selectedPiece.style.border = '1px dashed #cbd5e1';
       this.selectedPiece.style.cursor = 'default';
-      this.selectedPiece.dataset.id = ''; // Clear piece ID data
+      this.selectedPiece.dataset.id = ''; 
     } else {
-      // Handle board-to-board movement
       if (targetImage) {
         this.selectedPiece.style.backgroundImage = targetImage;
-        this.selectedPiece.dataset.id = cell.dataset.id; // Add piece ID data
+        this.selectedPiece.dataset.id = cell.dataset.id; 
       } else {
         this.selectedPiece.style.backgroundImage = '';
-        this.selectedPiece.dataset.id = ''; // Clear piece ID data
+        this.selectedPiece.dataset.id = ''; 
       }
     }
 
-    // Update cooldown state
     this.lastMoveTime = Date.now();
     if (this.mode === 'coop') {
       sendMessage('add-cooldown', {
@@ -403,7 +379,6 @@ export default class PuzzleBoard {
 
     this.deselectPiece();
     
-    // Check for puzzle completion after each move
     this.checkPuzzleCompletion();
   }
 
@@ -430,7 +405,6 @@ export default class PuzzleBoard {
     this.timerStarted = true;
     this.startTime = Date.now();
 
-    // Start the timer immediately with first update
     const updateTimer = () => {
       const now = Date.now();
       let displayTime;
@@ -443,7 +417,7 @@ export default class PuzzleBoard {
 
         if (timeLeft === 0) {
           this.stopTimer();
-          // TODO: Handle game end
+          this.disablePieceMovement()
         }
       } else {
         const elapsed = now - this.startTime;
@@ -455,7 +429,6 @@ export default class PuzzleBoard {
       this.timerElement.querySelector('.timer-text').textContent = displayTime;
     };
 
-    // Update immediately and then start interval
     updateTimer();
     this.timerInterval = setInterval(updateTimer, 1000);
   }
@@ -490,7 +463,6 @@ export default class PuzzleBoard {
       sessionId: this.sessionId
     });
 
-    // Create audit log entry
     sendMessage('add-audit', {
       username: this.username,
       sessionId: this.sessionId,
@@ -557,11 +529,9 @@ export default class PuzzleBoard {
 
     const boardPieces = Array.from(this.boardElement.children);
     
-    // First check if all spots are filled
     const allFilled = boardPieces.every(cell => cell.style.backgroundImage);
     if (!allFilled) return;
 
-    // Then check if all pieces are in correct positions
     const allCorrect = boardPieces.every((cell) => {
       const pieceId = cell.dataset.id;
       if (!pieceId) return false;
@@ -594,13 +564,11 @@ export default class PuzzleBoard {
     this.boardElement.classList.add('completed');
     
     if (this.mode === 'solo') {
-      // Show completion dialog
       const dialog = document.getElementById('completion-dialog');
       const timeSpan = document.getElementById('completion-time');
       timeSpan.textContent = timeString;
       dialog.style.display = 'block';
 
-      // Handle dialog buttons
       const postButton = dialog.querySelector('.post-button');
       const closeButton = dialog.querySelector('.close-button');
 
@@ -640,7 +608,6 @@ export default class PuzzleBoard {
       piece.style.pointerEvents = 'none'; // Add this line
     });
 
-    // Clear any selected piece
     this.deselectPiece();
   }
 
@@ -650,7 +617,6 @@ export default class PuzzleBoard {
    */
   updatePlayerColor(color) {
     this.playerColor = color;
-    // If there's a currently selected piece, update its highlighting
     if (this.selectedPiece) {
       this.highlightPiece(this.selectedPiece, true, color);
     }

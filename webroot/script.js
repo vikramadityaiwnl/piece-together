@@ -9,12 +9,12 @@ class App {
     this.initializeElements();
     this.setupEventListeners();
     this.gameState = null;
-    this.initialData = null; // Ensure initialData is defined
+    this.initialData = null;
     this.reactionPanel = document.querySelector('.reaction-panel');
     this.initializeReactions();
-    this.lastEmojiTime = 0; // Add this property to track the last emoji send time
-    this.hintDialog = null; // Add this property to store the hint dialog element
-    this.imageData = null; // Add this to store image data
+    this.lastEmojiTime = 0;
+    this.hintDialog = null;
+    this.imageData = null;
   }
 
   /**
@@ -29,16 +29,15 @@ class App {
     this.soundToggleButton = document.getElementById('sound-toggle-button');
     this.hintButton = document.getElementById('hintButton');
     this.sidePanel = document.getElementById('sidePanel');
-    this.panelToggles = document.querySelectorAll('.tab');  // Changed from .panel-toggle
+    this.panelToggles = document.querySelectorAll('.tab');
     this.panelContents = document.querySelectorAll('.panel-content');
     this.puzzleTitle = document.getElementById('puzzle-title');
     this.backButton = document.getElementById('back-button');
     this.puzzleBoard = document.getElementById('puzzleBoard');
     this.piecesTray = document.getElementById('piecesTray');
     this.timer = document.getElementById('timer');
-    this.auditPanel = document.getElementById('audit-panel-content'); // Ensure this line is present
+    this.auditPanel = document.getElementById('audit-panel-content');
 
-    // Add back button handler
     if (this.backButton) {
       this.backButton.addEventListener('click', () => {
         this.gameScreen.style.display = 'none';
@@ -58,63 +57,52 @@ class App {
     });
     this.coopButton.addEventListener('click', () => this.startGame('coop'));
 
-    // Update panel toggle handlers
     this.panelToggles.forEach(button => {
       button.addEventListener('click', () => {
-        // Remove active class from all toggles first
         this.panelToggles.forEach(t => t.classList.remove('active'));
-        // Add active class to clicked toggle
         button.classList.add('active');
 
-        // Hide all panels first
         this.panelContents.forEach(p => p.classList.remove('active'));
-        // Show the selected panel
         const panelId = `${button.dataset.tab}-panel`;
         document.getElementById(panelId)?.classList.add('active');
       });
     });
 
-    // Add sub-panel tab handlers
     document.querySelectorAll('.sub-tab').forEach(button => {
       button.addEventListener('click', () => {
         const parentPanel = button.closest('.panel-content');
         const subtabName = button.dataset.subtab;
-        
-        // Update active state of tabs
+
         parentPanel.querySelectorAll('.sub-tab').forEach(tab => {
           tab.classList.toggle('active', tab === button);
         });
-        
-        // Update visibility of content panels
+
         parentPanel.querySelectorAll('.sub-panel-content').forEach(content => {
           content.classList.toggle('active', content.id === `${subtabName}-content`);
         });
       });
     });
 
-    // Add handler for back button to reset mode elements and clear state
     if (this.backButton) {
       this.backButton.addEventListener('click', () => {
         if (this.puzzleBoard) {
           this.puzzleBoard.resetModeElements();
-          this.puzzleBoard.resetState();
         }
         this.gameState = null;
         this.gameScreen.style.display = 'none';
         this.mainMenuScreen.style.display = 'block';
+        this.timer.textContent = '00:00';
 
         sendMessage('leave-coop');
       });
     }
 
-    // Add event listener for hint button
     if (this.hintButton) {
       this.hintButton.addEventListener('click', () => {
         sendMessage('get-hint', { username: this.initialData.username, mode: this.puzzleBoard.mode });
       });
     }
 
-    // Add event listener for audit piece ID clicks
     document.getElementById('audit-panel-content').addEventListener('click', (event) => {
       const pieceIdElement = event.target.closest('.audit-piece-id');
       if (pieceIdElement) {
@@ -145,14 +133,12 @@ class App {
     }
 
     if (message.data.type === 'update-game-state') {
-      // Update local state to match Redis state
       if (this.puzzleBoard && this.puzzleBoard.mode === 'coop') {
         this.puzzleBoard.updateState(message.data.gameState);
       }
     }
 
     if (message.data.type === 'cooldown-update') {
-      // Update cooldown state when received from Redis
       if (this.puzzleBoard && this.puzzleBoard.mode === 'coop') {
         this.puzzleBoard.updateCooldown(message.data.cooldown);
       }
@@ -162,36 +148,30 @@ class App {
       this.updateAuditPanel(message.data.auditLog);
     }
 
-    // Add handling for online players update
     if (message.data.type === 'online-players-update') {
       this.updateOnlinePlayers(message.data.players);
     }
 
-    // Handle emoji sync
     if (message.data.type === 'send-emoji') {
       this.renderFloatingEmoji(message.data.emoji);
     }
 
-    // Handle highlight event
     if (message.data.type === 'highlight-piece') {
       if (this.puzzleBoard) {
         this.puzzleBoard.handleHighlight(message.data.pieceId, message.data.color);
       }
     }
 
-    // Handle deselect event
     if (message.data.type === 'deselect-piece') {
       if (this.puzzleBoard) {
         this.puzzleBoard.handleDeselect(message.data.pieceId);
       }
     }
 
-    // Handle show-hint message
     if (message.data.type === 'show-hint') {
       this.showHintDialog(message.data.message);
     }
 
-    // Add new case for handling image data
     if (message.data.type === 'send-image-data') {
       this.imageData = message.data.imageData;
       this.showSubredditDialog().then(selectedSubreddit => {
@@ -229,7 +209,7 @@ class App {
       const from = entry.action.from;
       const to = entry.action.to;
       const pieceId = entry.action.pieceId;
-      
+
       return `
         <div class="audit-entry">
           <div class="audit-header">
@@ -245,11 +225,10 @@ class App {
         </div>
       `;
     }).join('');
-  
+
     this.auditPanel.innerHTML = auditHtml;
     this.auditPanel.scrollTop = this.auditPanel.scrollHeight;
 
-    // Update leaderboard
     this.updateLeaderboard(auditLog);
   }
 
@@ -296,7 +275,6 @@ class App {
 
     document.querySelector('#rankings-content .rankings-list').innerHTML = leaderboardHtml;
 
-    // Update MVPs
     const mostActivePlayer = Object.entries(movesCount).sort((a, b) => b[1] - a[1])[0];
     const mostAccuratePlayer = Object.entries(correctMovesCount).sort((a, b) => b[1] - a[1])[0];
     const mostAdventurousPlayer = Object.entries(incorrectMovesCount).sort((a, b) => b[1] - a[1])[0];
@@ -341,19 +319,18 @@ class App {
 
     this.mainMenuScreen.style.display = 'none';
     this.gameScreen.style.display = 'block';
-    
+
     const image = this.initialData.image;
-    
+
     if (!image) {
       console.error('No image found');
       return;
     }
-    
+
     this.puzzleTitle.textContent = `r/${image.subreddit}`
-    
+
     this.gameManager = new GameManager(mode, this.sessionId);
-    
-    // Initialize puzzle board with game state only if mode is coop
+
     this.initializePuzzleBoard(mode, mode === 'coop' ? this.initialData.gameState : null, image);
 
     if (mode === 'coop') {
@@ -381,11 +358,10 @@ class App {
       this.mainMenuScreen.style.display = 'block';
       this.gameScreen.style.display = 'none';
     }
-    this.initialData = data; // Ensure initialData is set
-    this.sessionId = data.sessionId;  // Add this line
+    this.initialData = data;
+    this.sessionId = data.sessionId;
     this.setupSoundToggleButton(assets);
 
-    // Store startedAt time
     if (startedAt) {
       this.startedAt = startedAt;
     }
@@ -435,29 +411,27 @@ class App {
    */
   initializePuzzleBoard(mode, gameState = null, image) {
     const currentUser = this.initialData.username;
-    this.onlinePlayers = this.onlinePlayers || []; // Ensure onlinePlayers is defined
+    this.onlinePlayers = this.onlinePlayers || [];
     const player = this.onlinePlayers.find(player => player.username === currentUser);
-    const playerColor = player ? player.color : '#3b82f6'; // Default to blue if not found
+    const playerColor = player ? player.color : '#3b82f6';
 
     this.puzzleBoard = new PuzzleBoard(
-      image.pieces, 
-      mode, 
-      this.sessionId, 
+      image.pieces,
+      mode,
+      this.sessionId,
       gameState,
       this.initialData.username,
       this.initialData.cooldown,
-      mode === 'coop' ? this.startedAt : null, // Use startedAt from initialData
-      playerColor // Pass the player color
+      mode === 'coop' ? this.startedAt : null,
+      playerColor
     );
   }
 
-  // Add new methods for player management
   updateOnlinePlayers(players) {
     this.onlinePlayers = this.onlinePlayers || [];
     players.forEach(newPlayer => {
       const existingPlayerIndex = this.onlinePlayers.findIndex(player => player.username === newPlayer.username);
       if (existingPlayerIndex !== -1) {
-        // Override existing player entry
         this.onlinePlayers[existingPlayerIndex] = newPlayer;
       } else {
         this.onlinePlayers.push(newPlayer);
@@ -465,7 +439,6 @@ class App {
     });
     this.renderOnlinePlayers();
 
-    // Update the puzzle board with the new player color if the current user is found
     const currentUser = this.initialData.username;
     const player = this.onlinePlayers.find(player => player.username === currentUser);
     if (player && this.puzzleBoard) {
@@ -473,7 +446,6 @@ class App {
     }
   }
 
-  // Update the renderOnlinePlayers method to include avatars
   renderOnlinePlayers() {
     const list = document.querySelector('.online-players-list');
     if (!list) return;
@@ -525,7 +497,6 @@ class App {
       floatingEmoji.remove();
     });
 
-    // Send emoji to realtime
     sendMessage('send-emoji', { emoji, username: this.initialData.username, sessionId: this.sessionId });
   }
 
@@ -564,7 +535,7 @@ class App {
 
     return new Promise((resolve) => {
       const subreddits = [...new Set(this.imageData.map(image => image.subreddit))];
-      
+
       dialog.innerHTML = `
         <div class="subreddit-dialog-content">
           <h2>Select Subreddit</h2>
@@ -581,7 +552,6 @@ class App {
 
       document.body.appendChild(dialog);
 
-      // Add click handlers
       dialog.querySelectorAll('.subreddit-button').forEach(button => {
         button.addEventListener('click', () => {
           const subreddit = button.dataset.subreddit;
@@ -630,5 +600,10 @@ class App {
           sessionId: this.sessionId
         });
       }
-      
-      this.puzzleBoard.selectPiece(piece);    }  }}new App();
+
+      this.puzzleBoard.selectPiece(piece);
+    }
+  }
+}
+
+new App();
