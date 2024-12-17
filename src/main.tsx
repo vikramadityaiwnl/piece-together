@@ -149,7 +149,6 @@ type PuzzleCompletionCoop = {
 type MemorialPost = {
   type: 'memorial-post';
   sessionId: string;
-  postId: string;
 }
 
 type UploadCustomPost = {
@@ -427,7 +426,6 @@ const uploadMemorialPost = async (context: Devvit.Context, data: PuzzleCompletio
     channel.send({
       type: 'memorial-post',
       sessionId: data.sessionId,
-      postId: post.id
     })
   } catch (error) {
     context.ui.showToast({ text: 'Something went wrong! Please refresh the page!' });
@@ -576,40 +574,6 @@ Devvit.addCustomPostType({
       };
     });
 
-    const memorialInitialData = useAsync<MemorialInitialData>(async () => {
-      const [
-        pieces,
-        subreddit,
-        completedIn,
-        rankings,
-        mvp,
-        auditLog
-      ] = await Promise.all([
-        context.redis.get(`puzzle:${context.postId}:pieces`),
-        context.redis.get(`puzzle:${context.postId}:subreddit`),
-        context.redis.get(`puzzle:${context.postId}:completedIn`),
-        context.redis.get(`puzzle:${context.postId}:rankings`),
-        context.redis.get(`puzzle:${context.postId}:mvp`),
-        context.redis.get(`puzzle:${context.postId}:auditLog`)
-      ]);
-
-      return {
-        type: 'memorialInitialData',
-        data: {
-          pieces: pieces ? JSON.parse(pieces) : [],
-          subreddit: subreddit || 'unknown',
-          completedIn: completedIn ? parseInt(completedIn) : 0,
-          rankings: rankings ? JSON.parse(rankings) : [],
-          mvp: mvp ? JSON.parse(mvp) : {
-            mostActive: null,
-            mostAccurate: null,
-            mostAdventurous: null
-          },
-          auditLog: auditLog ? JSON.parse(auditLog) : []
-        }
-      };
-    });
-
     const channel = useChannel({
       name: 'events',
       onMessage: (msg: RealtimeMessage) => {
@@ -637,7 +601,9 @@ Devvit.addCustomPostType({
         }
 
         if (msg.type === 'memorial-post') {
-          context.ui.navigateTo(msg.postId);
+          context.reddit.getCurrentSubreddit().then((subreddit) => {
+            context.ui.navigateTo(subreddit)
+          })
         }
 
         if (msg.sessionId === sessionId) return;
@@ -675,9 +641,9 @@ Devvit.addCustomPostType({
         const startTime = await context.redis.get(timeKey);
         const expiration = new Date(parseInt(startTime || '0') + 60 * 60 * 1000);
 
-        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers), { expiration });
+        context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers), { expiration });
 
-        await channel.send({
+        channel.send({
           type: 'online-players-update',
           players: updatedPlayers,
           sessionId
@@ -694,9 +660,9 @@ Devvit.addCustomPostType({
         const startTime = await context.redis.get(timeKey);
         const expiration = new Date(parseInt(startTime || '0') + 60 * 60 * 1000);
 
-        await context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers), { expiration });
+        context.redis.set(`puzzle:${context.postId}:onlinePlayers`, JSON.stringify(updatedPlayers), { expiration });
 
-        await channel.send({
+        channel.send({
           type: 'online-players-update',
           players: updatedPlayers,
           sessionId
@@ -717,7 +683,7 @@ Devvit.addCustomPostType({
         case 'add-cooldown':
           const cooldown = new Date(Date.now() + 60 * 1000);
           const key = `puzzle:${context.postId}:${msg.username}:cooldown`;
-          await context.redis.set(key, cooldown.getTime().toString(), {
+          context.redis.set(key, cooldown.getTime().toString(), {
             expiration: cooldown,
           });
 
@@ -805,8 +771,8 @@ Devvit.addCustomPostType({
           break;
 
         case 'update-game-state':
-          await channel.send(msg)
           context.redis.set(`puzzle:${context.postId}:gameState`, JSON.stringify(msg.gameState), { expiration });
+          channel.send(msg)
           break;
 
         case 'show-toast':
@@ -814,7 +780,7 @@ Devvit.addCustomPostType({
           break;
 
         case 'start-coop':
-          channel.subscribe();
+          await channel.subscribe();
           break;
 
         case 'leave-coop':
@@ -822,7 +788,7 @@ Devvit.addCustomPostType({
           break;
 
         case 'clear-cache':
-          await clearCache(context);
+          clearCache(context);
           const nav = await context.reddit.getCurrentSubreddit();
           context.ui.navigateTo(nav);
           break;
@@ -866,7 +832,7 @@ Devvit.addCustomPostType({
             auditLog.shift();
           }
 
-          await context.redis.set(auditKey, JSON.stringify(auditLog), { expiration });
+          context.redis.set(auditKey, JSON.stringify(auditLog), { expiration });
 
           context.ui.webView.postMessage('myWebView', {
             data: {
@@ -875,7 +841,7 @@ Devvit.addCustomPostType({
             }
           });
 
-          await channel.send({
+          channel.send({
             type: 'audit-update',
             auditLog,
             sessionId: msg.sessionId
@@ -965,7 +931,7 @@ Devvit.addCustomPostType({
             });
           }
 
-          await context.redis.set(`puzzle:${context.postId}:leaderboard`, JSON.stringify(leaderboard));
+          context.redis.set(`puzzle:${context.postId}:leaderboard`, JSON.stringify(leaderboard));
 
           context.ui.webView.postMessage('myWebView', {
             data: {

@@ -62,6 +62,10 @@ export default class PuzzleBoard {
       }, 0);
     }
 
+    setTimeout(() => {
+      sendMessage('get-game-state')
+    }, 500)
+
     if (cooldown) {
       this.updateCooldown(cooldown);
     }
