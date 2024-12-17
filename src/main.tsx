@@ -119,11 +119,12 @@ type AddAudit = {
   };
 }
 
+// Update PuzzleCompletionCoop type
 type PuzzleCompletionCoop = {
   type: 'puzzle-completion-coop';
   username: string;
   sessionId: string;
-  completedIn: string;
+  completedIn: number; // Change to number instead of string
   subreddit: string;
   pieces: { id: string; filepath: string, correct_position: number }[];
   rankings: { username: string; avatar: string, score: number }[];
@@ -353,6 +354,7 @@ const checkCacheExpiration = async (context: Devvit.Context) => {
   return { startedAt: startTimeMs, expired: false };
 };
 
+// Update uploadMemorialPost function
 const uploadMemorialPost = async (context: Devvit.Context, data: PuzzleCompletionCoop, channel: UseChannelResult<RealtimeMessage>) => {
   const post = await context.reddit.submitPost({
     title: `Jigsaw Puzzle on ${data.subreddit} topic completed!`,
@@ -373,13 +375,36 @@ const uploadMemorialPost = async (context: Devvit.Context, data: PuzzleCompletio
 
   clearCache(context)
 
+  // Format rankings to ensure avatar URLs are included
+  const rankings = data.rankings.map(rank => ({
+    username: rank.username,
+    avatar: rank.avatar || getAssets(context).dummyProfile, // Fallback to dummy profile if no avatar
+    score: typeof rank.score === 'number' ? rank.score : 0 // Ensure score is a number
+  }));
+
+  // Format MVP data to ensure avatar URLs are included
+  const mvp = {
+    mostActive: data.mvp.mostActive ? {
+      ...data.mvp.mostActive,
+      avatar: data.mvp.mostActive.avatar || getAssets(context).dummyProfile
+    } : null,
+    mostAccurate: data.mvp.mostAccurate ? {
+      ...data.mvp.mostAccurate,
+      avatar: data.mvp.mostAccurate.avatar || getAssets(context).dummyProfile
+    } : null,
+    mostAdventurous: data.mvp.mostAdventurous ? {
+      ...data.mvp.mostAdventurous,
+      avatar: data.mvp.mostAdventurous.avatar || getAssets(context).dummyProfile
+    } : null
+  };
+
   try {
     await Promise.all([
       context.redis.set(`puzzle:${post.id}:completedIn`, String(data.completedIn)),
       context.redis.set(`puzzle:${post.id}:pieces`, JSON.stringify(data.pieces)),
       context.redis.set(`puzzle:${post.id}:subreddit`, data.subreddit),
-      context.redis.set(`puzzle:${post.id}:rankings`, JSON.stringify(data.rankings)),
-      context.redis.set(`puzzle:${post.id}:mvp`, JSON.stringify(data.mvp)),
+      context.redis.set(`puzzle:${post.id}:rankings`, JSON.stringify(rankings)), // Use formatted rankings
+      context.redis.set(`puzzle:${post.id}:mvp`, JSON.stringify(mvp)), // Use formatted MVP data
       context.redis.set(`puzzle:${post.id}:auditLog`, JSON.stringify(data.auditLog)),
       context.redis.set(`puzzle:${post.id}:type`, 'memorial'),
       context.redis.set(`puzzle:${post.id}:completionDetails`, JSON.stringify({
@@ -388,17 +413,17 @@ const uploadMemorialPost = async (context: Devvit.Context, data: PuzzleCompletio
         timestamp: Date.now()
       }))
     ]);
+
+    context.ui.showToast({ text: 'Memorial post created!' });
+
+    channel.send({
+      type: 'memorial-post',
+      sessionId: data.sessionId,
+      postId: post.id
+    })
   } catch (error) {
     context.ui.showToast({ text: 'Something went wrong! Please refresh the page!' });
   }
-
-  context.ui.showToast({ text: 'Memorial post created!' });
-
-  channel.send({
-    type: 'memorial-post',
-    sessionId: data.sessionId,
-    postId: post.id
-  })
 }
 
 Devvit.configure({

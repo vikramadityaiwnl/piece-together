@@ -591,7 +591,7 @@ export default class PuzzleBoard {
     this.isCompleted = true;
     this.stopTimer();
 
-    const completionTime = this.startTime ? Date.now() - this.startTime : 0; // Ensure we have a valid number
+    const completionTime = this.startTime ? Date.now() - this.startTime : 0;
     const minutes = Math.floor(completionTime / 60000);
     const seconds = Math.floor((completionTime % 60000) / 1000);
     const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -651,23 +651,31 @@ export default class PuzzleBoard {
         };
       }
 
-      // Get audit log from DOM and ensure all numeric values are valid
+      // Get audit log entries with correct data attributes
       const auditEntries = Array.from(document.querySelectorAll('#audit-panel-content .audit-entry')).map(entry => {
-        const timestamp = parseInt(entry.dataset.timestamp) || Date.now(); // Provide fallback
+        const timeElement = entry.querySelector('.audit-time');
+        const userElement = entry.querySelector('.audit-user');
+        const pieceElement = entry.querySelector('.audit-piece-id');
+        const positions = entry.querySelectorAll('.audit-position');
+
+        if (!timeElement || !userElement || !pieceElement || positions.length < 2) {
+          return null;
+        }
+
         return {
-          username: entry.querySelector('.audit-user').textContent,
-          avatar: entry.querySelector('.audit-avatar')?.src || '',
+          username: userElement.textContent.trim(),
+          avatar: userElement.dataset.avatar || '',
           action: {
-            from: entry.querySelector('.audit-move .audit-position').textContent,
-            to: entry.querySelector('.audit-move .audit-position:last-child').textContent,
-            pieceId: entry.querySelector('.audit-piece-id').textContent,
-            timestamp,
+            from: positions[0].textContent.trim(),
+            to: positions[1].textContent.trim(),
+            pieceId: pieceElement.textContent.trim(),
+            timestamp: parseInt(timeElement.dataset.timestamp) || Date.now(),
             isCorrect: entry.dataset.isCorrect === 'true'
           }
         };
-      });
+      }).filter(entry => entry !== null); // Remove any invalid entries
 
-      // Calculate player stats and ensure all numeric values are valid
+      // Calculate player stats from valid audit entries
       const playerStats = {};
       auditEntries.forEach(entry => {
         if (!playerStats[entry.username]) {
@@ -680,85 +688,108 @@ export default class PuzzleBoard {
           };
         }
 
-        playerStats[entry.username].totalMoves++;
+        const stats = playerStats[entry.username];
+        stats.totalMoves++;
+        
         if (entry.action.isCorrect) {
-          playerStats[entry.username].correctMoves++;
-          playerStats[entry.username].score += 5;
+          stats.correctMoves++;
+          stats.score += 5;
         } else {
-          playerStats[entry.username].incorrectMoves++;
-          playerStats[entry.username].score -= 2;
+          stats.incorrectMoves++;
+          stats.score -= 2;
         }
       });
 
-      // Ensure all MVP data contains valid numbers
-      const mvpData = {
-        mostActive: null,
-        mostAccurate: null,
-        mostAdventurous: null
-      };
+      // Create rankings with validated data
+      const rankings = Object.entries(playerStats)
+        .filter(([username]) => username && username !== 'Unknown')
+        .map(([username, stats]) => ({
+          username,
+          avatar: stats.avatar,
+          score: Math.max(0, stats.score)
+        }))
+        .sort((a, b) => b.score - a.score);
 
-      let maxMoves = 0;
-      Object.entries(playerStats).forEach(([username, stats]) => {
-        if (stats.totalMoves > maxMoves) {
-          maxMoves = stats.totalMoves;
-          mvpData.mostActive = { 
-            username, 
-            moves: stats.totalMoves || 0,
-            avatar: stats.avatar 
-          };
-        }
-      });
-
-      let bestAccuracy = -1;
-      Object.entries(playerStats).forEach(([username, stats]) => {
-        if (stats.totalMoves >= 3) {
-          const accuracy = stats.correctMoves / stats.totalMoves || 0;
-          if (accuracy > bestAccuracy) {
-            bestAccuracy = accuracy;
-            mvpData.mostAccurate = { 
-              username, 
-              accuracy: Math.round(accuracy * 100) || 0,
-              avatar: stats.avatar 
-            };
-          }
-        }
-      });
-
-      let maxIncorrect = 0;
-      Object.entries(playerStats).forEach(([username, stats]) => {
-        if (stats.incorrectMoves > maxIncorrect) {
-          maxIncorrect = stats.incorrectMoves;
-          mvpData.mostAdventurous = { 
-            username, 
-            incorrectMoves: stats.incorrectMoves || 0,
-            avatar: stats.avatar 
-          };
-        }
-      });
-
-      // Create rankings with valid numeric scores
-      const rankings = Object.entries(playerStats).map(([username, stats]) => ({
-        username,
-        avatar: stats.avatar,
-        score: stats.score || 0
-      })).sort((a, b) => (b.score || 0) - (a.score || 0));
-
-      sendMessage('puzzle-completion-coop', {
-        username: this.username,
-        sessionId: this.sessionId,
-        completedIn: completionTime || 0, // Ensure we send a valid number
-        subreddit: this.subreddit,
-        pieces: this.pieces,
-        rankings,
-        mvp: mvpData,
-        auditLog: auditEntries
-      });
-
-      // sendMessage('clear-cache')
+      // Only proceed if we have valid data
+      if (rankings.length > 0) {
+        sendMessage('puzzle-completion-coop', {
+          username: this.username,
+          sessionId: this.sessionId,
+          completedIn: completionTime,
+          subreddit: this.subreddit,
+          pieces: this.pieces,
+          rankings,
+          mvp: {
+            mostActive: this.calculateMostActive(playerStats),
+            mostAccurate: this.calculateMostAccurate(playerStats),
+            mostAdventurous: this.calculateMostAdventurous(playerStats)
+          },
+          auditLog: auditEntries
+        });
+      }
     }
 
     dialog.style.display = 'block';
     this.disablePieceMovement();
+  }
+
+  // Add helper methods for MVP calculations
+  calculateMostActive(playerStats) {
+    let maxMoves = 0;
+    let mostActive = null;
+    
+    Object.entries(playerStats).forEach(([username, stats]) => {
+      if (!username || !stats) return;
+      if (stats.totalMoves > maxMoves) {
+        maxMoves = stats.totalMoves;
+        mostActive = { 
+          username, 
+          moves: stats.totalMoves,
+          avatar: stats.avatar || ''
+        };
+      }
+    });
+    
+    return mostActive;
+  }
+
+  calculateMostAccurate(playerStats) {
+    let bestAccuracy = -1;
+    let mostAccurate = null;
+    
+    Object.entries(playerStats).forEach(([username, stats]) => {
+      if (!username || !stats || stats.totalMoves < 3) return;
+      const accuracy = stats.correctMoves / stats.totalMoves;
+      if (accuracy > bestAccuracy) {
+        bestAccuracy = accuracy;
+        mostAccurate = { 
+          username, 
+          accuracy: Math.round(accuracy * 100),
+          avatar: stats.avatar || ''
+        };
+      }
+    });
+    
+    return mostAccurate;
+  }
+
+  calculateMostAdventurous(playerStats) {
+    let maxIncorrect = 0;
+    let mostAdventurous = null;
+    
+    Object.entries(playerStats).forEach(([username, stats]) => {
+      if (!username || !stats) return;
+      if (stats.incorrectMoves > maxIncorrect) {
+        maxIncorrect = stats.incorrectMoves;
+        mostAdventurous = { 
+          username, 
+          incorrectMoves: stats.incorrectMoves,
+          avatar: stats.avatar || ''
+        };
+      }
+    });
+    
+    return mostAdventurous;
   }
 
   /**

@@ -37,6 +37,7 @@ class App {
     this.piecesTray = document.getElementById('piecesTray');
     this.timer = document.getElementById('timer');
     this.auditPanel = document.getElementById('audit-panel-content');
+    this.mainMenuTitle = document.getElementById('main-menu-title');
 
     if (this.backButton) {
       this.backButton.addEventListener('click', () => {
@@ -216,12 +217,13 @@ class App {
       const from = entry.action.from;
       const to = entry.action.to;
       const pieceId = entry.action.pieceId;
+      const isCorrect = entry.action.isCorrect;
 
       return `
-        <div class="audit-entry">
+        <div class="audit-entry" data-is-correct="${isCorrect}">
           <div class="audit-header">
-            <span class="audit-time">${time}</span>
-            <span class="audit-user">${entry.username}</span>
+            <span class="audit-time" data-timestamp="${entry.action.timestamp}">${time}</span>
+            <span class="audit-user" data-avatar="${entry.avatar || this.initialData.assets.dummyProfile}">${entry.username}</span>
           </div>
           <div class="audit-move">
             moved <span class="audit-piece-id">${pieceId}</span> 
@@ -365,6 +367,7 @@ class App {
       this.mainMenuScreen.style.display = 'block';
       this.gameScreen.style.display = 'none';
     }
+    if (this.mainMenuTitle) this.mainMenuTitle.style.backgroundImage = `url(${assets.title})`;
     this.initialData = data;
     this.sessionId = data.sessionId;
     this.setupSoundToggleButton(assets);
