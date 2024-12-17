@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8" />
+  <title>Puzzle Memorial</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="game-screen">
+    <div class="top-bar">
+      <h1 id="puzzle-title"></h1>
+
+      <div id="timer" class="timer">
+        <span class="timer-icon">⏱️</span>
+        <span class="timer-text">00:00</span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="puzzle-section">
+        <div id="puzzleBoard" class="puzzle-container completed"></div>
+      </div>
+      
+      <div class="side-panel" id="sidePanel">
+        <div class="panel-tabs">
+          <button class="tab active" data-tab="leaderboard">🏆</button>
+          <button class="tab" data-tab="audit">📝</button>
+        </div>
+
+        <div id="leaderboard-panel" class="panel-content active">
+          <div class="sub-panel-tabs">
+            <button class="sub-tab active" data-subtab="rankings">Ranks</button>
+            <button class="sub-tab" data-subtab="mvp">MVPs</button>
+          </div>
+          
+          <div class="sub-panel-content active" id="rankings-content">
+            <div class="rankings-list">
+              <!-- Leaderboard entries will be dynamically inserted here -->
+            </div>
+          </div>
+
+          <div class="sub-panel-content" id="mvp-content">
+            <!-- MVP content will be dynamically inserted here -->
+          </div>
+        </div>
+
+        <div id="audit-panel" class="panel-content">
+          <div id="audit-panel-content"></div>
+            <!-- Audit log entries will be dynamically inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./memorial.js"></script>
+</body>
+
+</html>

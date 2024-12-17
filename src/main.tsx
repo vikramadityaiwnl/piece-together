@@ -38,6 +38,22 @@ type CustomInitialData = {
   };
 }
 
+type MemorialInitialData = {
+  type: 'memorialInitialData';
+  data: {
+    pieces: { id: string; filepath: string, correct_position: number }[];
+    subreddit: string;
+    completedIn: number;
+    rankings: { username: string; avatar: string, score: number }[];
+    mvp: {
+      mostActive: { username: string, moves: number, avatar: string } | null;
+      mostAccurate: { username: string, accuracy: number, avatar: string } | null;
+      mostAdventurous: { username: string, incorrectMoves: number, avatar: string } | null;
+    };
+    auditLog: any[];
+  };
+};
+
 type AddCooldown = {
   type: 'add-cooldown';
   username: string;
@@ -483,6 +499,40 @@ Devvit.addCustomPostType({
       };
     });
 
+    const memorialInitialData = useAsync<MemorialInitialData>(async () => {
+      const [
+        pieces,
+        subreddit,
+        completedIn,
+        rankings,
+        mvp,
+        auditLog
+      ] = await Promise.all([
+        context.redis.get(`puzzle:${context.postId}:pieces`),
+        context.redis.get(`puzzle:${context.postId}:subreddit`),
+        context.redis.get(`puzzle:${context.postId}:completedIn`),
+        context.redis.get(`puzzle:${context.postId}:rankings`),
+        context.redis.get(`puzzle:${context.postId}:mvp`),
+        context.redis.get(`puzzle:${context.postId}:auditLog`)
+      ]);
+
+      return {
+        type: 'memorialInitialData',
+        data: {
+          pieces: pieces ? JSON.parse(pieces) : [],
+          subreddit: subreddit || 'unknown',
+          completedIn: completedIn ? parseInt(completedIn) : 0,
+          rankings: rankings ? JSON.parse(rankings) : [],
+          mvp: mvp ? JSON.parse(mvp) : {
+            mostActive: null,
+            mostAccurate: null,
+            mostAdventurous: null
+          },
+          auditLog: auditLog ? JSON.parse(auditLog) : []
+        }
+      };
+    });
+
     const channel = useChannel({
       name: 'events',
       onMessage: (msg: RealtimeMessage) => {
@@ -855,23 +905,32 @@ Devvit.addCustomPostType({
       if (hasClicked) return;
       setHasClicked(true);
 
-      if (post.data?.type === 'custom') {
-        context.ui.webView.postMessage('myWebView', customInitialData);
-        setWebviewVisible(true);
-        return
+      if (post.data?.type === 'memorial') {
+        if (memorialInitialData.data) {
+          // Fix the message structure to match what memorial.js expects
+          context.ui.webView.postMessage('myWebView', memorialInitialData.data);
+          setWebviewVisible(true);
+        }
+        return;
       }
 
-      if (post.data?.type === 'memorial') {
-
+      if (post.data?.type === 'custom') {
+        if (customInitialData.data) {
+          context.ui.webView.postMessage('myWebView', customInitialData);
+          setWebviewVisible(true);
+        }
         return
       }
 
       if (initialData.error === null) {
-        context.ui.webView.postMessage('myWebView', initialData);
-        setWebviewVisible(true);
-      } else {
-        setHasClicked(false)
-      }
+        if (initialData.data) {
+          context.ui.webView.postMessage('myWebView', initialData);
+          setWebviewVisible(true);
+        }
+        return
+      } 
+      
+      setHasClicked(false)
     };
 
     return (
