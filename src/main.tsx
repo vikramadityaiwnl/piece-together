@@ -442,6 +442,7 @@ Devvit.addCustomPostType({
 
     const [onlinePlayers, setOnlinePlayers] = useState<{ username: string, color: string, avatar: string }[]>([]);
 
+    // Modify post useAsync to handle memorial initialization
     const post = useAsync(async () => {
       const type = await context.redis.get(`puzzle:${context.postId}:type`);
 
@@ -453,6 +454,17 @@ Devvit.addCustomPostType({
       }
 
       if (type === 'memorial') {
+        setWebviewVisible(true); // Auto-show webview for memorial posts
+        const memorialData = await loadMemorialData(); // We'll define this function next
+        if (memorialData) {
+          // Slight delay to ensure webview is ready
+          setTimeout(() => {
+            context.ui.webView.postMessage('myWebView', {
+              type: 'memorialInitialData',
+              data: memorialData
+            });
+          }, 100);
+        }
         return {
           type: 'memorial',
           webview: 'memorial.html'
@@ -463,7 +475,39 @@ Devvit.addCustomPostType({
         type: 'default',
         webview: 'page.html'
       }
-    })
+    });
+
+    // Helper function to load memorial data
+    const loadMemorialData = async () => {
+      const [
+        pieces,
+        subreddit,
+        completedIn,
+        rankings,
+        mvp,
+        auditLog
+      ] = await Promise.all([
+        context.redis.get(`puzzle:${context.postId}:pieces`),
+        context.redis.get(`puzzle:${context.postId}:subreddit`),
+        context.redis.get(`puzzle:${context.postId}:completedIn`),
+        context.redis.get(`puzzle:${context.postId}:rankings`),
+        context.redis.get(`puzzle:${context.postId}:mvp`),
+        context.redis.get(`puzzle:${context.postId}:auditLog`)
+      ]);
+
+      return {
+        pieces: pieces ? JSON.parse(pieces) : [],
+        subreddit: subreddit || 'unknown',
+        completedIn: completedIn ? parseInt(completedIn) : 0,
+        rankings: rankings ? JSON.parse(rankings) : [],
+        mvp: mvp ? JSON.parse(mvp) : {
+          mostActive: null,
+          mostAccurate: null,
+          mostAdventurous: null
+        },
+        auditLog: auditLog ? JSON.parse(auditLog) : []
+      };
+    };
 
     const initialData = useAsync<InitialData>(async () => {
       const { startedAt, expired } = await checkCacheExpiration(context);
@@ -930,21 +974,12 @@ Devvit.addCustomPostType({
       if (hasClicked) return;
       setHasClicked(true);
 
-      if (post.data?.type === 'memorial') {
-        if (memorialInitialData.data) {
-          // Fix the message structure to match what memorial.js expects
-          context.ui.webView.postMessage('myWebView', memorialInitialData.data);
-          setWebviewVisible(true);
-        }
-        return;
-      }
-
       if (post.data?.type === 'custom') {
         if (customInitialData.data) {
           context.ui.webView.postMessage('myWebView', customInitialData);
           setWebviewVisible(true);
         }
-        return
+        return;
       }
 
       if (initialData.error === null) {
@@ -952,7 +987,7 @@ Devvit.addCustomPostType({
           context.ui.webView.postMessage('myWebView', initialData);
           setWebviewVisible(true);
         }
-        return
+        return;
       } 
       
       setHasClicked(false)
@@ -960,32 +995,36 @@ Devvit.addCustomPostType({
 
     return (
       <vstack grow padding="small">
-        <vstack
-          grow={!webviewVisible}
-          height={webviewVisible ? '0%' : '100%'}
-          alignment="middle center"
-        >
-          <image
-            url='game/main_screen_background.gif'
-            description='Main screen background'
+        {(!webviewVisible && post.data?.type !== 'memorial') && (
+          <vstack
+            grow
             height='100%'
-            width='100%'
-            imageHeight={100}
-            imageWidth={100}
-            onPress={showWebView}
-          />
-        </vstack>
-        <vstack grow={webviewVisible} height={webviewVisible ? '100%' : '0%'}>
-          <vstack border="thick" borderColor="black" height={webviewVisible ? '100%' : '0%'}>
-            <webview
-              id="myWebView"
-              url={post.data?.webview || 'page.html'}
-              onMessage={(msg) => onMessage(msg as WebViewMessage)}
-              grow
-              height={webviewVisible ? '100%' : '0%'}
+            alignment="middle center"
+          >
+            <image
+              url='game/main_screen_background.gif'
+              description='Main screen background'
+              height='100%'
+              width='100%'
+              imageHeight={100}
+              imageWidth={100}
+              onPress={showWebView}
             />
           </vstack>
-        </vstack>
+        )}
+        {(webviewVisible || post.data?.type === 'memorial') && (
+          <vstack grow height='100%'>
+            <vstack border="thick" borderColor="black" height='100%'>
+              <webview
+                id="myWebView"
+                url={post.data?.webview || 'page.html'}
+                onMessage={(msg) => onMessage(msg as WebViewMessage)}
+                grow
+                height='100%'
+              />
+            </vstack>
+          </vstack>
+        )}
       </vstack>
     );
   },
