@@ -83,7 +83,7 @@ class MemorialApp {
     // Initialize leaderboard and MVPs
     this.initializeLeaderboard(rankings);
     this.initializeMVPs(mvp);
-
+ 
     // Initialize audit log
     this.initializeAuditLog(auditLog);
   }

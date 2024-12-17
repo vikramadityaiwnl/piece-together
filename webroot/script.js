@@ -186,6 +186,40 @@ class App {
         }
       });
     }
+
+    // Handle puzzle-completion message
+    if (message.data.type === 'puzzle-completion') {
+      this.showCompletionDialog(message.data.completionTime);
+    }
+  }
+
+  /**
+   * Show the completion dialog.
+   * @param {number} completionTime - The time taken to complete the puzzle.
+   */
+  showCompletionDialog(completionTime) {
+    const dialog = document.getElementById('completion-dialog');
+    const messageContainer = document.getElementById('completion-message');
+    const postButton = dialog.querySelector('.post-button');
+    const closeButton = dialog.querySelector('.close-button');
+
+    // Subtract 1 hour (3600000 milliseconds) from the completion time
+    const adjustedCompletionTime = completionTime - 3600000;
+
+    const minutes = Math.floor(adjustedCompletionTime / 60000);
+    const seconds = Math.floor((adjustedCompletionTime % 60000) / 1000);
+    const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    messageContainer.innerHTML = `<p>Congratulations! You solved the puzzle in <span id="completion-time">${timeString}</span>!</p>`;
+    postButton.style.display = 'none';
+
+    if (closeButton) {
+      closeButton.onclick = () => {
+        dialog.style.display = 'none';
+      };
+    }
+
+    dialog.style.display = 'block';
   }
 
   /**

@@ -218,9 +218,17 @@ type AddToLeaderboard = {
   sessionId: string;
 }
 
+// Add to WebViewMessage and RealtimeMessage types
+type PuzzleCompletion = {
+  type: 'puzzle-completion';
+  username: string;
+  sessionId: string;
+  completionTime: number;
+};
+
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | UploadCustomPost | PuzzleCompletionCoop | AddToLeaderboard | ClearCache;
-type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | PuzzleCompletionCoop | MemorialPost;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | UploadCustomPost | PuzzleCompletionCoop | AddToLeaderboard | ClearCache | PuzzleCompletion;
+type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | PuzzleCompletionCoop | MemorialPost | PuzzleCompletion;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -645,6 +653,11 @@ Devvit.addCustomPostType({
         if (msg.type === 'deselect-piece') {
           context.ui.webView.postMessage('myWebView', { data: msg });
         }
+
+        // Handle puzzle-completion message
+        if (msg.type === 'puzzle-completion') {
+          context.ui.webView.postMessage('myWebView', { data: msg });
+        }
       },
       onSubscribed: async () => {
         const currUser = await context.reddit.getCurrentUser();
@@ -702,7 +715,7 @@ Devvit.addCustomPostType({
 
       switch (msg.type) {
         case 'add-cooldown':
-          const cooldown = new Date(Date.now() + 0 * 1000);
+          const cooldown = new Date(Date.now() + 60 * 1000);
           const key = `puzzle:${context.postId}:${msg.username}:cooldown`;
           await context.redis.set(key, cooldown.getTime().toString(), {
             expiration: cooldown,
@@ -960,6 +973,10 @@ Devvit.addCustomPostType({
               leaderboard
             }
           });
+          break;
+
+        case 'puzzle-completion':
+          await channel.send(msg);
           break;
 
         default:

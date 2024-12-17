@@ -591,9 +591,10 @@ export default class PuzzleBoard {
     this.isCompleted = true;
     this.stopTimer();
 
-    const completionTime = this.startTime ? Date.now() - this.startTime : 0;
-    const minutes = Math.floor(completionTime / 60000);
-    const seconds = Math.floor((completionTime % 60000) / 1000);
+    // Subtract 1 hour (3600000 milliseconds) from the completion time
+    const adjustedCompletionTime = this.startTime ? Date.now() - this.startTime - 3600000 : 0;
+    const minutes = Math.floor(adjustedCompletionTime / 60000);
+    const seconds = Math.floor((adjustedCompletionTime % 60000) / 1000);
     const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     this.boardElement.classList.add('completed');
@@ -611,7 +612,7 @@ export default class PuzzleBoard {
         if (closeButton) {
           sendMessage('add-to-leaderboard', {
             username: this.username,
-            time: completionTime,
+            time: adjustedCompletionTime,
             sessionId: this.sessionId
           });
 
@@ -630,7 +631,7 @@ export default class PuzzleBoard {
               leaderboard: [],
               pieces: this.pieces,
               hint: this.hint,
-              completedIn: completionTime,
+              completedIn: adjustedCompletionTime,
               subreddit: this.subreddit
             });
             dialog.style.display = 'none';
@@ -715,7 +716,7 @@ export default class PuzzleBoard {
         sendMessage('puzzle-completion-coop', {
           username: this.username,
           sessionId: this.sessionId,
-          completedIn: completionTime,
+          completedIn: adjustedCompletionTime,
           subreddit: this.subreddit,
           pieces: this.pieces,
           rankings,
@@ -727,6 +728,13 @@ export default class PuzzleBoard {
           auditLog: auditEntries
         });
       }
+
+      // Send puzzle-completion message to all users
+      sendMessage('puzzle-completion', {
+        username: this.username,
+        sessionId: this.sessionId,
+        completionTime: adjustedCompletionTime
+      });
     }
 
     dialog.style.display = 'block';
