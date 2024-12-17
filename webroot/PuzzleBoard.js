@@ -450,7 +450,7 @@ export default class PuzzleBoard {
         }
       } else {
         // For solo mode or when not using initialTime
-        const elapsed = now - (this.startTime || now);
+        const elapsed = now - this.startTime;
         const minutes = Math.floor(elapsed / 60000);
         const seconds = Math.floor((elapsed % 60000) / 1000);
         displayTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -461,6 +461,7 @@ export default class PuzzleBoard {
       }
     };
 
+    this.startTime = Date.now(); // Set startTime when starting the timer
     updateTimer();
     this.timerInterval = setInterval(updateTimer, 1000);
   }
@@ -595,8 +596,7 @@ export default class PuzzleBoard {
     this.isCompleted = true;
     this.stopTimer();
 
-    // Subtract 1 hour (3600000 milliseconds) from the completion time
-    const adjustedCompletionTime = this.startTime ? Date.now() - this.startTime - 3600000 : 0;
+    const adjustedCompletionTime = Date.now() - this.startTime;
     const minutes = Math.floor(adjustedCompletionTime / 60000);
     const seconds = Math.floor((adjustedCompletionTime % 60000) / 1000);
     const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
