@@ -1,5 +1,5 @@
 import './createPost.js';
-import { Devvit, useState, useAsync, useChannel, UseAsyncResult } from '@devvit/public-api';
+import { Devvit, useState, useAsync, useChannel, UseChannelResult } from '@devvit/public-api';
 import { images } from './images.data.js';
 
 const PLAYER_COLORS = [
@@ -103,10 +103,38 @@ type AddAudit = {
   };
 }
 
-type PuzzleCompletion = {
-  type: 'puzzle-completed';
+type PuzzleCompletionCoop = {
+  type: 'puzzle-completion-coop';
+  username: string;
   sessionId: string;
+  completedIn: string;
+  subreddit: string;
+  pieces: { id: string; filepath: string, correct_position: number }[];
+  rankings: { username: string; avatar: string, score: number }[];
+  mvp: {
+    mostActive: { username: string, moves: number, avatar: string } | null;
+    mostAccurate: { username: string, accuracy: number, avatar: string } | null;
+    mostAdventurous: { username: string, incorrectMoves: number, avatar: string } | null;
+  };
+  auditLog: {
+    username: string;
+    avatar: string;
+    action: {
+      from: string;
+      to: string;
+      pieceId: string;
+      timestamp: number;
+      isCorrect: boolean;
+    };
+  }[];
 }
+
+type MemorialPost = {
+  type: 'memorial-post';
+  sessionId: string;
+  postId: string;
+}
+
 type UploadCustomPost = {
   type: 'upload-custom-post';
   username: string;
@@ -122,6 +150,10 @@ type AuditUpdate = {
   type: 'audit-update';
   auditLog: any[];
   sessionId: string;
+}
+
+type ClearCache = {
+  type: 'clear-cache';
 }
 
 type OnlinePlayersUpdate = {
@@ -170,8 +202,8 @@ type AddToLeaderboard = {
 }
 
 // Update WebViewMessage type
-type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | UploadCustomPost | PuzzleCompletion | AddToLeaderboard;
-type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | PuzzleCompletion;
+type WebViewMessage = AddCooldown | ShowCooldown | UpdateGameState | ShowToast | StartCoop | LeaveCoop | StartSolo | GetGameState | GetCooldown | AddAudit | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | GetHint | ShowHint | SendImageData | GetImageUrls | UploadCustomPost | PuzzleCompletionCoop | AddToLeaderboard | ClearCache;
+type RealtimeMessage = UpdateGameState | AuditUpdate | OnlinePlayersUpdate | SendEmoji | HighlightPiece | DeselectPiece | PuzzleCompletionCoop | MemorialPost;
 
 type PuzzlePieceImage = {
   folder: string;
@@ -186,6 +218,7 @@ type GameState = {
 }
 
 type Assets = {
+  title: string;
   solo: string;
   coop: string;
   soundOn: string;
@@ -201,6 +234,7 @@ type Assets = {
  * @returns {Assets} The assets URLs.
  */
 const getAssets = (context: Devvit.Context): Assets => ({
+  title: context.assets.getURL('game/title.png'),
   solo: context.assets.getURL('game/solo_button.png'),
   coop: context.assets.getURL('game/co_op_button.png'),
   soundOn: context.assets.getURL('game/sound_on.png'),
@@ -302,6 +336,54 @@ const checkCacheExpiration = async (context: Devvit.Context) => {
 
   return { startedAt: startTimeMs, expired: false };
 };
+
+const uploadMemorialPost = async (context: Devvit.Context, data: PuzzleCompletionCoop, channel: UseChannelResult<RealtimeMessage>) => {
+  const post = await context.reddit.submitPost({
+    title: `Jigsaw Puzzle on ${data.subreddit} topic completed!`,
+    subredditName: (await context.reddit.getCurrentSubreddit()).name,
+    preview: (
+      <vstack height="100%" width="100%" alignment="middle center">
+        <image
+          url='game/loading_preview.gif'
+          description='Loading Preview'
+          height='100%'
+          width='100%'
+          imageHeight={100}
+          imageWidth={100}
+        />
+      </vstack>
+    )
+  })
+
+  clearCache(context)
+
+  try {
+    await Promise.all([
+      context.redis.set(`puzzle:${post.id}:completedIn`, String(data.completedIn)),
+      context.redis.set(`puzzle:${post.id}:pieces`, JSON.stringify(data.pieces)),
+      context.redis.set(`puzzle:${post.id}:subreddit`, data.subreddit),
+      context.redis.set(`puzzle:${post.id}:rankings`, JSON.stringify(data.rankings)),
+      context.redis.set(`puzzle:${post.id}:mvp`, JSON.stringify(data.mvp)),
+      context.redis.set(`puzzle:${post.id}:auditLog`, JSON.stringify(data.auditLog)),
+      context.redis.set(`puzzle:${post.id}:type`, 'memorial'),
+      context.redis.set(`puzzle:${post.id}:completionDetails`, JSON.stringify({
+        completedBy: data.username,
+        completedIn: data.completedIn,
+        timestamp: Date.now()
+      }))
+    ]);
+  } catch (error) {
+    context.ui.showToast({ text: 'Something went wrong! Please refresh the page!' });
+  }
+
+  context.ui.showToast({ text: 'Memorial post created!' });
+
+  channel.send({
+    type: 'memorial-post',
+    sessionId: data.sessionId,
+    postId: post.id
+  })
+}
 
 Devvit.configure({
   redditAPI: true,
@@ -420,11 +502,18 @@ Devvit.addCustomPostType({
           context.ui.webView.postMessage('myWebView', { data: msg });
         }
 
-        if (msg.sessionId === sessionId) return;
-
-        if (msg.type === "puzzle-completed") {
-          // create memorial post
+        if (msg.type === "puzzle-completion-coop") {
+          const selectedPlayer = onlinePlayers[onlinePlayers.length - 1];
+          if (selectedPlayer.username === msg.username) {
+            uploadMemorialPost(context, msg, channel);
+          }
         }
+
+        if (msg.type === 'memorial-post') {
+          context.ui.navigateTo(msg.postId);
+        }
+
+        if (msg.sessionId === sessionId) return;
 
         if (msg.type === 'update-game-state' || msg.type === 'audit-update' || msg.type === 'send-emoji') {
           context.ui.webView.postMessage('myWebView', { data: msg });
@@ -494,7 +583,7 @@ Devvit.addCustomPostType({
 
       switch (msg.type) {
         case 'add-cooldown':
-          const cooldown = new Date(Date.now() + 60 * 1000);
+          const cooldown = new Date(Date.now() + 0 * 1000);
           const key = `puzzle:${context.postId}:${msg.username}:cooldown`;
           await context.redis.set(key, cooldown.getTime().toString(), {
             expiration: cooldown,
@@ -600,6 +689,12 @@ Devvit.addCustomPostType({
           channel.unsubscribe();
           break;
 
+        case 'clear-cache':
+          await clearCache(context);
+          const nav = await context.reddit.getCurrentSubreddit();
+          context.ui.navigateTo(nav);
+          break;
+
         case 'start-solo':
           channel.unsubscribe();
           const imagesWithUrls = await Promise.all(
@@ -656,13 +751,6 @@ Devvit.addCustomPostType({
           break;
 
         case 'upload-custom-post':
-          context.ui.webView.postMessage('myWebView', {
-            data: {
-              type: 'show-toast',
-              message: 'Uploading your post...'
-            }
-          });
-
           const subreddit = await context.reddit.getCurrentSubreddit()
           const post = await context.reddit.submitPost({
             title: `${msg.username} challenges you to solve Jigsaw Puzzle on ${msg.subreddit} topic!`,
@@ -690,12 +778,21 @@ Devvit.addCustomPostType({
           await context.redis.set(`puzzle:${post.id}:owner`, msg.username);
           await context.redis.set(`puzzle:${post.id}:type`, 'custom');
 
-          context.ui.showToast({ text: 'Post created!' });
+          context.ui.showToast({ text: 'Custom post created!' });
           context.ui.navigateTo(post);
           break;
 
-        case 'puzzle-completed':
-          // puzzle completed in coop mode
+        case 'puzzle-completion-coop':
+          try {
+            await channel.send(msg);
+          } catch (error) {
+            context.ui.webView.postMessage('myWebView', {
+              data: {
+                type: 'show-toast',
+                message: 'Something went wrong. Please refresh the page!'
+              }
+            });
+          }
           break;
 
         case 'send-emoji':
@@ -747,7 +844,6 @@ Devvit.addCustomPostType({
           break;
 
         default:
-          console.info('Unknown message:', JSON.stringify(msg));
           break;
       }
     };
@@ -774,7 +870,6 @@ Devvit.addCustomPostType({
         context.ui.webView.postMessage('myWebView', initialData);
         setWebviewVisible(true);
       } else {
-        console.error('Initial data not ready:', initialData);
         setHasClicked(false)
       }
     };

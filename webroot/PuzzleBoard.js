@@ -56,6 +56,10 @@ export default class PuzzleBoard {
 
     if (gameState) {
       this.updateState(gameState);
+      // Add this check after updating state
+      setTimeout(() => {
+        this.checkInitialCompletion();
+      }, 0);
     }
 
     if (cooldown) {
@@ -66,7 +70,9 @@ export default class PuzzleBoard {
       this.timerElement.classList.add('active');
     }
     
-    if (mode === 'coop' && this.initialTime) {
+    if (mode === 'coop' && startTime) {
+      this.startTime = parseInt(startTime);
+      this.timerStarted = true;
       this.startTimer();
     }
 
@@ -422,10 +428,7 @@ export default class PuzzleBoard {
   }
 
   startTimer() {
-    if (this.timerStarted) return;
-    
-    this.timerStarted = true;
-    this.startTime = Date.now();
+    if (this.timerInterval) return;
 
     const updateTimer = () => {
       const now = Date.now();
@@ -439,16 +442,19 @@ export default class PuzzleBoard {
 
         if (timeLeft === 0) {
           this.stopTimer();
-          this.disablePieceMovement()
+          this.disablePieceMovement();
         }
       } else {
-        const elapsed = now - this.startTime;
+        // For solo mode or when not using initialTime
+        const elapsed = now - (this.startTime || now);
         const minutes = Math.floor(elapsed / 60000);
         const seconds = Math.floor((elapsed % 60000) / 1000);
         displayTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       }
 
-      this.timerElement.querySelector('.timer-text').textContent = displayTime;
+      if (this.timerElement) {
+        this.timerElement.querySelector('.timer-text').textContent = displayTime;
+      }
     };
 
     updateTimer();
@@ -585,23 +591,24 @@ export default class PuzzleBoard {
     this.isCompleted = true;
     this.stopTimer();
 
-    const completionTime = Date.now() - this.startTime;
+    const completionTime = this.startTime ? Date.now() - this.startTime : 0; // Ensure we have a valid number
     const minutes = Math.floor(completionTime / 60000);
     const seconds = Math.floor((completionTime % 60000) / 1000);
     const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     this.boardElement.classList.add('completed');
     
-    if (this.mode === 'solo') {
-      const dialog = document.getElementById('completion-dialog');
-      const timeSpan = document.getElementById('completion-time');
-      timeSpan.textContent = timeString;
-      dialog.style.display = 'block';
+    const dialog = document.getElementById('completion-dialog');
+    const messageContainer = document.getElementById('completion-message');
+    const postButton = dialog.querySelector('.post-button');
 
+    if (this.mode === 'solo') {
+      messageContainer.innerHTML = `<p>Congratulations! You solved the puzzle in <span id="completion-time">${timeString}</span>!</p>`;
+      postButton.style.display = 'inline-block';
+      
       if (this.type === 'custom') {
         const closeButton = dialog.querySelector('.close-button');
         if (closeButton) {
-          // Send leaderboard update automatically
           sendMessage('add-to-leaderboard', {
             username: this.username,
             time: completionTime,
@@ -613,7 +620,6 @@ export default class PuzzleBoard {
           };
         }
       } else {
-        // Default puzzle behavior
         const postButton = dialog.querySelector('.post-button');
         const closeButton = dialog.querySelector('.close-button');
 
@@ -636,13 +642,122 @@ export default class PuzzleBoard {
         }
       }
     } else {
-      sendMessage('puzzle-completed', {
-        sessionId: this.sessionId,
-        completionTime: timeString,
-        username: this.username
+      messageContainer.innerHTML = '<p>Congratulations on completing the puzzle together! 🎈</p>';
+      postButton.style.display = 'none';
+      const closeButton = dialog.querySelector('.close-button');
+      if (closeButton) {
+        closeButton.onclick = () => {
+          dialog.style.display = 'none';
+        };
+      }
+
+      // Get audit log from DOM and ensure all numeric values are valid
+      const auditEntries = Array.from(document.querySelectorAll('#audit-panel-content .audit-entry')).map(entry => {
+        const timestamp = parseInt(entry.dataset.timestamp) || Date.now(); // Provide fallback
+        return {
+          username: entry.querySelector('.audit-user').textContent,
+          avatar: entry.querySelector('.audit-avatar')?.src || '',
+          action: {
+            from: entry.querySelector('.audit-move .audit-position').textContent,
+            to: entry.querySelector('.audit-move .audit-position:last-child').textContent,
+            pieceId: entry.querySelector('.audit-piece-id').textContent,
+            timestamp,
+            isCorrect: entry.dataset.isCorrect === 'true'
+          }
+        };
       });
+
+      // Calculate player stats and ensure all numeric values are valid
+      const playerStats = {};
+      auditEntries.forEach(entry => {
+        if (!playerStats[entry.username]) {
+          playerStats[entry.username] = {
+            totalMoves: 0,
+            correctMoves: 0,
+            incorrectMoves: 0,
+            score: 0,
+            avatar: entry.avatar
+          };
+        }
+
+        playerStats[entry.username].totalMoves++;
+        if (entry.action.isCorrect) {
+          playerStats[entry.username].correctMoves++;
+          playerStats[entry.username].score += 5;
+        } else {
+          playerStats[entry.username].incorrectMoves++;
+          playerStats[entry.username].score -= 2;
+        }
+      });
+
+      // Ensure all MVP data contains valid numbers
+      const mvpData = {
+        mostActive: null,
+        mostAccurate: null,
+        mostAdventurous: null
+      };
+
+      let maxMoves = 0;
+      Object.entries(playerStats).forEach(([username, stats]) => {
+        if (stats.totalMoves > maxMoves) {
+          maxMoves = stats.totalMoves;
+          mvpData.mostActive = { 
+            username, 
+            moves: stats.totalMoves || 0,
+            avatar: stats.avatar 
+          };
+        }
+      });
+
+      let bestAccuracy = -1;
+      Object.entries(playerStats).forEach(([username, stats]) => {
+        if (stats.totalMoves >= 3) {
+          const accuracy = stats.correctMoves / stats.totalMoves || 0;
+          if (accuracy > bestAccuracy) {
+            bestAccuracy = accuracy;
+            mvpData.mostAccurate = { 
+              username, 
+              accuracy: Math.round(accuracy * 100) || 0,
+              avatar: stats.avatar 
+            };
+          }
+        }
+      });
+
+      let maxIncorrect = 0;
+      Object.entries(playerStats).forEach(([username, stats]) => {
+        if (stats.incorrectMoves > maxIncorrect) {
+          maxIncorrect = stats.incorrectMoves;
+          mvpData.mostAdventurous = { 
+            username, 
+            incorrectMoves: stats.incorrectMoves || 0,
+            avatar: stats.avatar 
+          };
+        }
+      });
+
+      // Create rankings with valid numeric scores
+      const rankings = Object.entries(playerStats).map(([username, stats]) => ({
+        username,
+        avatar: stats.avatar,
+        score: stats.score || 0
+      })).sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      sendMessage('puzzle-completion-coop', {
+        username: this.username,
+        sessionId: this.sessionId,
+        completedIn: completionTime || 0, // Ensure we send a valid number
+        subreddit: this.subreddit,
+        pieces: this.pieces,
+        rankings,
+        mvp: mvpData,
+        auditLog: auditEntries
+      });
+
+      // sendMessage('clear-cache')
     }
 
+    dialog.style.display = 'block';
     this.disablePieceMovement();
   }
 
@@ -671,6 +786,59 @@ export default class PuzzleBoard {
     this.playerColor = color;
     if (this.selectedPiece) {
       this.highlightPiece(this.selectedPiece, true, color);
+    }
+  }
+
+  /**
+   * Check if puzzle is already completed when joining
+   */
+  checkInitialCompletion() {
+    const boardPieces = Array.from(this.boardElement.children);
+    
+    const allFilled = boardPieces.every(cell => cell.style.backgroundImage);
+    if (!allFilled) return;
+
+    const allCorrect = boardPieces.every((cell) => {
+      const pieceId = cell.dataset.id;
+      if (!pieceId) return false;
+
+      const position = Number(cell.dataset.from.split('-')[1]) - 1;
+      const piece = this.pieces.find(p => p.id === pieceId);
+      
+      return piece && piece.correct_position === position;
+    });
+
+    if (allCorrect) {
+      this.isCompleted = true;
+      this.boardElement.classList.add('completed');
+      this.disablePieceMovement();
+      this.stopTimer();
+
+      if (this.mode === 'coop') {
+        const dialog = document.getElementById('completion-dialog');
+        if (!dialog) return;
+
+        const messageContainer = document.getElementById('completion-message');
+        if (messageContainer) {
+          messageContainer.innerHTML = '<p>Congratulations on completing the puzzle together! 🎈</p>';
+        }
+
+        const postButton = dialog.querySelector('.post-button');
+        if (postButton) {
+          postButton.style.display = 'none';
+        }
+
+        const closeButton = dialog.querySelector('.close-button');
+        if (closeButton) {
+          closeButton.onclick = () => {
+            dialog.style.display = 'none';
+
+            sendMessage('clear-cache')
+          };
+        }
+
+        dialog.style.display = 'block';
+      }
     }
   }
 }
