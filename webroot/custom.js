@@ -18,7 +18,6 @@ class CustomApp {
    */
   initializeElements() {
     this.gameScreen = document.getElementById('game-screen');
-    this.backgroundMusic = document.getElementById('background-music');
     this.hintButton = document.getElementById('hintButton');
     this.sidePanel = document.getElementById('sidePanel');
     this.panelToggles = document.querySelectorAll('.tab');
@@ -28,13 +27,6 @@ class CustomApp {
     this.piecesTray = document.getElementById('piecesTray');
     this.timer = document.getElementById('timer');
     this.leaderboardContent = document.querySelector('#rankings-content .rankings-list');
-
-    // Remove back button event listener
-    // if (this.backButton) {
-    //   this.backButton.addEventListener('click', () => {
-    //     window.location.reload();
-    //   });
-    // }
   }
 
   /**

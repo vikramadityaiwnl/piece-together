@@ -23,10 +23,8 @@ class App {
   initializeElements() {
     this.mainMenuScreen = document.getElementById('main-menu-screen');
     this.gameScreen = document.getElementById('game-screen');
-    this.backgroundMusic = document.getElementById('background-music');
     this.soloButton = document.getElementById('solo-button');
     this.coopButton = document.getElementById('coop-button');
-    this.soundToggleButton = document.getElementById('sound-toggle-button');
     this.hintButton = document.getElementById('hintButton');
     this.sidePanel = document.getElementById('sidePanel');
     this.panelToggles = document.querySelectorAll('.tab');
@@ -358,10 +356,6 @@ class App {
 
     if (this.soloButton) this.soloButton.setAttribute('src', assets.solo);
     if (this.coopButton) this.coopButton.setAttribute('src', assets.coop);
-    if (this.backgroundMusic) {
-      this.backgroundMusic.setAttribute('src', assets.backgroundMusic);
-      this.backgroundMusic.load();
-    }
     if (this.mainMenuScreen) {
       this.mainMenuScreen.style.backgroundImage = `url(${assets.mainMenuBackground})`;
       this.mainMenuScreen.style.display = 'block';
@@ -370,35 +364,12 @@ class App {
     if (this.mainMenuTitle) this.mainMenuTitle.style.backgroundImage = `url(${assets.title})`;
     this.initialData = data;
     this.sessionId = data.sessionId;
-    this.setupSoundToggleButton(assets);
 
     if (startedAt) {
       this.startedAt = startedAt;
     }
 
     this.toastManager.showWelcomeToast(username);
-  }
-
-  /**
-   * Setup the sound toggle button functionality.
-   * @param {Object} assets - The assets data.
-   */
-  setupSoundToggleButton(assets) {
-    this.soundToggleButton.setAttribute('src', assets.soundOn);
-
-    this.soundToggleButton.addEventListener('click', () => {
-      if (this.backgroundMusic.src) {
-        if (this.backgroundMusic.paused) {
-          this.backgroundMusic.play().catch(error => console.error('Error playing audio:', error));
-          this.soundToggleButton.setAttribute('src', assets.soundOn);
-        } else {
-          this.backgroundMusic.pause();
-          this.soundToggleButton.setAttribute('src', assets.soundOff);
-        }
-      } else {
-        console.error('Background music source is not set.');
-      }
-    });
   }
 
   /**
