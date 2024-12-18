@@ -174,176 +174,176 @@ export const images = [
     ]
   },
   {
-    "folder": "valorant-flying_character",
-    "subreddit": "VALORANT",
-    "hint": "flying character",
+    "folder": "valorant-flying_agent",
+    "subreddit": "valorant",
+    "hint": "flying agent",
     "pieces": [
       {
-        "filepath": "valorant-flying_character/piece_0_0.png",
+        "filepath": "valorant-flying_agent/piece_0_0.png",
         "correct_position": 0,
-        "id": "YUcg"
+        "id": "LXJI"
       },
       {
-        "filepath": "valorant-flying_character/piece_0_1.png",
+        "filepath": "valorant-flying_agent/piece_0_1.png",
         "correct_position": 1,
-        "id": "wjST"
+        "id": "Bfhz"
       },
       {
-        "filepath": "valorant-flying_character/piece_0_2.png",
+        "filepath": "valorant-flying_agent/piece_0_2.png",
         "correct_position": 2,
-        "id": "ZKDd"
+        "id": "GAGg"
       },
       {
-        "filepath": "valorant-flying_character/piece_0_3.png",
+        "filepath": "valorant-flying_agent/piece_0_3.png",
         "correct_position": 3,
-        "id": "GawJ"
+        "id": "NJPI"
       },
       {
-        "filepath": "valorant-flying_character/piece_1_0.png",
+        "filepath": "valorant-flying_agent/piece_1_0.png",
         "correct_position": 4,
-        "id": "YSKD"
+        "id": "HgAC"
       },
       {
-        "filepath": "valorant-flying_character/piece_1_1.png",
+        "filepath": "valorant-flying_agent/piece_1_1.png",
         "correct_position": 5,
-        "id": "Cwlh"
+        "id": "AmKO"
       },
       {
-        "filepath": "valorant-flying_character/piece_1_2.png",
+        "filepath": "valorant-flying_agent/piece_1_2.png",
         "correct_position": 6,
-        "id": "POjb"
+        "id": "pvfW"
       },
       {
-        "filepath": "valorant-flying_character/piece_1_3.png",
+        "filepath": "valorant-flying_agent/piece_1_3.png",
         "correct_position": 7,
-        "id": "EKWs"
+        "id": "MsHQ"
       },
       {
-        "filepath": "valorant-flying_character/piece_2_0.png",
+        "filepath": "valorant-flying_agent/piece_2_0.png",
         "correct_position": 8,
-        "id": "eYqz"
+        "id": "muHT"
       },
       {
-        "filepath": "valorant-flying_character/piece_2_1.png",
+        "filepath": "valorant-flying_agent/piece_2_1.png",
         "correct_position": 9,
-        "id": "RNQn"
+        "id": "bMXA"
       },
       {
-        "filepath": "valorant-flying_character/piece_2_2.png",
+        "filepath": "valorant-flying_agent/piece_2_2.png",
         "correct_position": 10,
-        "id": "Ukyg"
+        "id": "bIVH"
       },
       {
-        "filepath": "valorant-flying_character/piece_2_3.png",
+        "filepath": "valorant-flying_agent/piece_2_3.png",
         "correct_position": 11,
-        "id": "myYf"
+        "id": "avxH"
       },
       {
-        "filepath": "valorant-flying_character/piece_3_0.png",
+        "filepath": "valorant-flying_agent/piece_3_0.png",
         "correct_position": 12,
-        "id": "xpaI"
+        "id": "fVOa"
       },
       {
-        "filepath": "valorant-flying_character/piece_3_1.png",
+        "filepath": "valorant-flying_agent/piece_3_1.png",
         "correct_position": 13,
-        "id": "vaiW"
+        "id": "dAMY"
       },
       {
-        "filepath": "valorant-flying_character/piece_3_2.png",
+        "filepath": "valorant-flying_agent/piece_3_2.png",
         "correct_position": 14,
-        "id": "CnOX"
+        "id": "MhRj"
       },
       {
-        "filepath": "valorant-flying_character/piece_3_3.png",
+        "filepath": "valorant-flying_agent/piece_3_3.png",
         "correct_position": 15,
-        "id": "KOQZ"
+        "id": "mwdA"
       }
     ]
   },
   {
-    "folder": "valorant-toxic_character",
-    "subreddit": "VALORANT",
-    "hint": "toxic character",
+    "folder": "valorant-toxic",
+    "subreddit": "valorant",
+    "hint": "toxic",
     "pieces": [
       {
-        "filepath": "valorant-toxic_character/piece_0_0.png",
+        "filepath": "valorant-toxic/piece_0_0.png",
         "correct_position": 0,
-        "id": "vUXN"
+        "id": "ucPR"
       },
       {
-        "filepath": "valorant-toxic_character/piece_0_1.png",
+        "filepath": "valorant-toxic/piece_0_1.png",
         "correct_position": 1,
-        "id": "qwAt"
+        "id": "nDHf"
       },
       {
-        "filepath": "valorant-toxic_character/piece_0_2.png",
+        "filepath": "valorant-toxic/piece_0_2.png",
         "correct_position": 2,
-        "id": "ipme"
+        "id": "kfSb"
       },
       {
-        "filepath": "valorant-toxic_character/piece_0_3.png",
+        "filepath": "valorant-toxic/piece_0_3.png",
         "correct_position": 3,
-        "id": "TyTH"
+        "id": "yhTU"
       },
       {
-        "filepath": "valorant-toxic_character/piece_1_0.png",
+        "filepath": "valorant-toxic/piece_1_0.png",
         "correct_position": 4,
-        "id": "oJqg"
+        "id": "rJsS"
       },
       {
-        "filepath": "valorant-toxic_character/piece_1_1.png",
+        "filepath": "valorant-toxic/piece_1_1.png",
         "correct_position": 5,
-        "id": "xwnY"
+        "id": "dpiI"
       },
       {
-        "filepath": "valorant-toxic_character/piece_1_2.png",
+        "filepath": "valorant-toxic/piece_1_2.png",
         "correct_position": 6,
-        "id": "WJvH"
+        "id": "TQgW"
       },
       {
-        "filepath": "valorant-toxic_character/piece_1_3.png",
+        "filepath": "valorant-toxic/piece_1_3.png",
         "correct_position": 7,
-        "id": "VhvR"
+        "id": "hAmV"
       },
       {
-        "filepath": "valorant-toxic_character/piece_2_0.png",
+        "filepath": "valorant-toxic/piece_2_0.png",
         "correct_position": 8,
-        "id": "KjIA"
+        "id": "fDKH"
       },
       {
-        "filepath": "valorant-toxic_character/piece_2_1.png",
+        "filepath": "valorant-toxic/piece_2_1.png",
         "correct_position": 9,
-        "id": "OPRB"
+        "id": "cbFv"
       },
       {
-        "filepath": "valorant-toxic_character/piece_2_2.png",
+        "filepath": "valorant-toxic/piece_2_2.png",
         "correct_position": 10,
-        "id": "aPyU"
+        "id": "oPPi"
       },
       {
-        "filepath": "valorant-toxic_character/piece_2_3.png",
+        "filepath": "valorant-toxic/piece_2_3.png",
         "correct_position": 11,
-        "id": "QbEO"
+        "id": "dapg"
       },
       {
-        "filepath": "valorant-toxic_character/piece_3_0.png",
+        "filepath": "valorant-toxic/piece_3_0.png",
         "correct_position": 12,
-        "id": "mhXS"
+        "id": "Aasi"
       },
       {
-        "filepath": "valorant-toxic_character/piece_3_1.png",
+        "filepath": "valorant-toxic/piece_3_1.png",
         "correct_position": 13,
-        "id": "yGkj"
+        "id": "TPWi"
       },
       {
-        "filepath": "valorant-toxic_character/piece_3_2.png",
+        "filepath": "valorant-toxic/piece_3_2.png",
         "correct_position": 14,
-        "id": "vqSq"
+        "id": "sLDI"
       },
       {
-        "filepath": "valorant-toxic_character/piece_3_3.png",
+        "filepath": "valorant-toxic/piece_3_3.png",
         "correct_position": 15,
-        "id": "arCH"
+        "id": "GFaW"
       }
     ]
   },
@@ -608,4 +608,526 @@ export const images = [
       }
     ]
   },
+  {
+    "folder": "funny-koala_eating_icecream",
+    "subreddit": "funny",
+    "hint": "koala eating icecream",
+    "pieces": [
+      {
+        "filepath": "funny-koala_eating_icecream/piece_0_0.png",
+        "correct_position": 0,
+        "id": "ADbh"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_0_1.png",
+        "correct_position": 1,
+        "id": "Ifnd"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_0_2.png",
+        "correct_position": 2,
+        "id": "wIVM"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_0_3.png",
+        "correct_position": 3,
+        "id": "PKSf"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_1_0.png",
+        "correct_position": 4,
+        "id": "cbeP"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_1_1.png",
+        "correct_position": 5,
+        "id": "wysv"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_1_2.png",
+        "correct_position": 6,
+        "id": "eFBT"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_1_3.png",
+        "correct_position": 7,
+        "id": "AjPf"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_2_0.png",
+        "correct_position": 8,
+        "id": "oZIZ"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_2_1.png",
+        "correct_position": 9,
+        "id": "IcST"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_2_2.png",
+        "correct_position": 10,
+        "id": "ximE"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_2_3.png",
+        "correct_position": 11,
+        "id": "yYPr"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_3_0.png",
+        "correct_position": 12,
+        "id": "dWYc"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_3_1.png",
+        "correct_position": 13,
+        "id": "JgZv"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_3_2.png",
+        "correct_position": 14,
+        "id": "aXxd"
+      },
+      {
+        "filepath": "funny-koala_eating_icecream/piece_3_3.png",
+        "correct_position": 15,
+        "id": "pBMk"
+      }
+    ]
+  },
+  {
+    "folder": "funny-monkey",
+    "subreddit": "funny",
+    "hint": "monkey",
+    "pieces": [
+      {
+        "filepath": "funny-monkey/piece_0_0.png",
+        "correct_position": 0,
+        "id": "Lbmf"
+      },
+      {
+        "filepath": "funny-monkey/piece_0_1.png",
+        "correct_position": 1,
+        "id": "syjG"
+      },
+      {
+        "filepath": "funny-monkey/piece_0_2.png",
+        "correct_position": 2,
+        "id": "yZOR"
+      },
+      {
+        "filepath": "funny-monkey/piece_0_3.png",
+        "correct_position": 3,
+        "id": "VMSh"
+      },
+      {
+        "filepath": "funny-monkey/piece_1_0.png",
+        "correct_position": 4,
+        "id": "bVLB"
+      },
+      {
+        "filepath": "funny-monkey/piece_1_1.png",
+        "correct_position": 5,
+        "id": "xITm"
+      },
+      {
+        "filepath": "funny-monkey/piece_1_2.png",
+        "correct_position": 6,
+        "id": "hffa"
+      },
+      {
+        "filepath": "funny-monkey/piece_1_3.png",
+        "correct_position": 7,
+        "id": "xHnV"
+      },
+      {
+        "filepath": "funny-monkey/piece_2_0.png",
+        "correct_position": 8,
+        "id": "VlvB"
+      },
+      {
+        "filepath": "funny-monkey/piece_2_1.png",
+        "correct_position": 9,
+        "id": "Mwjp"
+      },
+      {
+        "filepath": "funny-monkey/piece_2_2.png",
+        "correct_position": 10,
+        "id": "Ayjt"
+      },
+      {
+        "filepath": "funny-monkey/piece_2_3.png",
+        "correct_position": 11,
+        "id": "IwVZ"
+      },
+      {
+        "filepath": "funny-monkey/piece_3_0.png",
+        "correct_position": 12,
+        "id": "dDJz"
+      },
+      {
+        "filepath": "funny-monkey/piece_3_1.png",
+        "correct_position": 13,
+        "id": "YhSS"
+      },
+      {
+        "filepath": "funny-monkey/piece_3_2.png",
+        "correct_position": 14,
+        "id": "uBjr"
+      },
+      {
+        "filepath": "funny-monkey/piece_3_3.png",
+        "correct_position": 15,
+        "id": "oZsd"
+      }
+    ]
+  },
+  {
+    "folder": "music-hey_jude",
+    "subreddit": "music",
+    "hint": "hey jude",
+    "pieces": [
+      {
+        "filepath": "music-hey_jude/piece_0_0.png",
+        "correct_position": 0,
+        "id": "iWJR"
+      },
+      {
+        "filepath": "music-hey_jude/piece_0_1.png",
+        "correct_position": 1,
+        "id": "XrPh"
+      },
+      {
+        "filepath": "music-hey_jude/piece_0_2.png",
+        "correct_position": 2,
+        "id": "ZYrE"
+      },
+      {
+        "filepath": "music-hey_jude/piece_0_3.png",
+        "correct_position": 3,
+        "id": "YMNV"
+      },
+      {
+        "filepath": "music-hey_jude/piece_1_0.png",
+        "correct_position": 4,
+        "id": "WnQq"
+      },
+      {
+        "filepath": "music-hey_jude/piece_1_1.png",
+        "correct_position": 5,
+        "id": "gajF"
+      },
+      {
+        "filepath": "music-hey_jude/piece_1_2.png",
+        "correct_position": 6,
+        "id": "tdVm"
+      },
+      {
+        "filepath": "music-hey_jude/piece_1_3.png",
+        "correct_position": 7,
+        "id": "PCla"
+      },
+      {
+        "filepath": "music-hey_jude/piece_2_0.png",
+        "correct_position": 8,
+        "id": "GYUa"
+      },
+      {
+        "filepath": "music-hey_jude/piece_2_1.png",
+        "correct_position": 9,
+        "id": "UGAt"
+      },
+      {
+        "filepath": "music-hey_jude/piece_2_2.png",
+        "correct_position": 10,
+        "id": "VMBJ"
+      },
+      {
+        "filepath": "music-hey_jude/piece_2_3.png",
+        "correct_position": 11,
+        "id": "prwJ"
+      },
+      {
+        "filepath": "music-hey_jude/piece_3_0.png",
+        "correct_position": 12,
+        "id": "MUNf"
+      },
+      {
+        "filepath": "music-hey_jude/piece_3_1.png",
+        "correct_position": 13,
+        "id": "rdSI"
+      },
+      {
+        "filepath": "music-hey_jude/piece_3_2.png",
+        "correct_position": 14,
+        "id": "YFWE"
+      },
+      {
+        "filepath": "music-hey_jude/piece_3_3.png",
+        "correct_position": 15,
+        "id": "mZvo"
+      }
+    ]
+  },
+  {
+    "folder": "music-we_are_the_champions",
+    "subreddit": "music",
+    "hint": "we are the champions",
+    "pieces": [
+      {
+        "filepath": "music-we_are_the_champions/piece_0_0.png",
+        "correct_position": 0,
+        "id": "sQen"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_0_1.png",
+        "correct_position": 1,
+        "id": "qcXa"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_0_2.png",
+        "correct_position": 2,
+        "id": "dDMg"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_0_3.png",
+        "correct_position": 3,
+        "id": "wLtf"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_1_0.png",
+        "correct_position": 4,
+        "id": "gQqE"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_1_1.png",
+        "correct_position": 5,
+        "id": "cMAu"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_1_2.png",
+        "correct_position": 6,
+        "id": "aUXa"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_1_3.png",
+        "correct_position": 7,
+        "id": "IIBc"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_2_0.png",
+        "correct_position": 8,
+        "id": "MiSu"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_2_1.png",
+        "correct_position": 9,
+        "id": "uHjx"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_2_2.png",
+        "correct_position": 10,
+        "id": "swrn"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_2_3.png",
+        "correct_position": 11,
+        "id": "Gldy"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_3_0.png",
+        "correct_position": 12,
+        "id": "yfbU"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_3_1.png",
+        "correct_position": 13,
+        "id": "sAdW"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_3_2.png",
+        "correct_position": 14,
+        "id": "DdtT"
+      },
+      {
+        "filepath": "music-we_are_the_champions/piece_3_3.png",
+        "correct_position": 15,
+        "id": "dsPo"
+      }
+    ]
+  },
+  {
+    "folder": "science-i_am_death_destroyer_of_world",
+    "subreddit": "science",
+    "hint": "i am death destroyer of world",
+    "pieces": [
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_0_0.png",
+        "correct_position": 0,
+        "id": "vPvm"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_0_1.png",
+        "correct_position": 1,
+        "id": "yiWB"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_0_2.png",
+        "correct_position": 2,
+        "id": "amSq"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_0_3.png",
+        "correct_position": 3,
+        "id": "ZQYL"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_1_0.png",
+        "correct_position": 4,
+        "id": "EBtX"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_1_1.png",
+        "correct_position": 5,
+        "id": "mgHk"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_1_2.png",
+        "correct_position": 6,
+        "id": "uMrO"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_1_3.png",
+        "correct_position": 7,
+        "id": "GjAC"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_2_0.png",
+        "correct_position": 8,
+        "id": "CkSo"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_2_1.png",
+        "correct_position": 9,
+        "id": "nxaL"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_2_2.png",
+        "correct_position": 10,
+        "id": "reQX"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_2_3.png",
+        "correct_position": 11,
+        "id": "HMVi"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_3_0.png",
+        "correct_position": 12,
+        "id": "InsL"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_3_1.png",
+        "correct_position": 13,
+        "id": "EfYE"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_3_2.png",
+        "correct_position": 14,
+        "id": "ktUW"
+      },
+      {
+        "filepath": "science-i_am_death_destroyer_of_world/piece_3_3.png",
+        "correct_position": 15,
+        "id": "nUla"
+      }
+    ]
+  },
+  {
+    "folder": "science-smartest_person",
+    "subreddit": "science",
+    "hint": "smartest person",
+    "pieces": [
+      {
+        "filepath": "science-smartest_person/piece_0_0.png",
+        "correct_position": 0,
+        "id": "RCgd"
+      },
+      {
+        "filepath": "science-smartest_person/piece_0_1.png",
+        "correct_position": 1,
+        "id": "spqn"
+      },
+      {
+        "filepath": "science-smartest_person/piece_0_2.png",
+        "correct_position": 2,
+        "id": "sfmk"
+      },
+      {
+        "filepath": "science-smartest_person/piece_0_3.png",
+        "correct_position": 3,
+        "id": "aCUv"
+      },
+      {
+        "filepath": "science-smartest_person/piece_1_0.png",
+        "correct_position": 4,
+        "id": "pxkc"
+      },
+      {
+        "filepath": "science-smartest_person/piece_1_1.png",
+        "correct_position": 5,
+        "id": "oGEj"
+      },
+      {
+        "filepath": "science-smartest_person/piece_1_2.png",
+        "correct_position": 6,
+        "id": "frTI"
+      },
+      {
+        "filepath": "science-smartest_person/piece_1_3.png",
+        "correct_position": 7,
+        "id": "doxR"
+      },
+      {
+        "filepath": "science-smartest_person/piece_2_0.png",
+        "correct_position": 8,
+        "id": "jcEV"
+      },
+      {
+        "filepath": "science-smartest_person/piece_2_1.png",
+        "correct_position": 9,
+        "id": "Lmmp"
+      },
+      {
+        "filepath": "science-smartest_person/piece_2_2.png",
+        "correct_position": 10,
+        "id": "UwRr"
+      },
+      {
+        "filepath": "science-smartest_person/piece_2_3.png",
+        "correct_position": 11,
+        "id": "uZSw"
+      },
+      {
+        "filepath": "science-smartest_person/piece_3_0.png",
+        "correct_position": 12,
+        "id": "iqeG"
+      },
+      {
+        "filepath": "science-smartest_person/piece_3_1.png",
+        "correct_position": 13,
+        "id": "RyaA"
+      },
+      {
+        "filepath": "science-smartest_person/piece_3_2.png",
+        "correct_position": 14,
+        "id": "pkOn"
+      },
+      {
+        "filepath": "science-smartest_person/piece_3_3.png",
+        "correct_position": 15,
+        "id": "uDBk"
+      }
+    ]
+  }
 ]

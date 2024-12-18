@@ -126,7 +126,6 @@ class App {
     if (type !== 'devvit-message') return;
 
     const { message } = data;
-    console.log('Received message:', message);
     if (!message) return;
 
     if (message.data.type === 'initialData') {
@@ -364,7 +363,6 @@ class App {
     const image = this.initialData.image;
 
     if (!image) {
-      console.error('No image found');
       return;
     }
 

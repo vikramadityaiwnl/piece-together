@@ -62,7 +62,6 @@ class CustomApp {
     if (type !== 'devvit-message') return;
 
     const { message } = data;
-    console.log('Received message:', message);
     if (!message) return;
 
     // Change this block to properly handle the message data structure
